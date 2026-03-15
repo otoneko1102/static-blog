@@ -1,0 +1,176 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import ShareButtons from '../components/ShareButtons.astro';
+import ArticleNav from '../components/ArticleNav.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import { getCollection, render } from 'astro:content';
+import { SITE_URL, sortPosts } from '../consts';
+
+interface Props {
+  id: string;
+  title: string;
+  description?: string;
+  pubDate: Date;
+  updatedDate?: Date;
+  tags?: string[];
+  heroImage?: string;
+}
+
+const { id, title, description, pubDate, updatedDate, tags = [], heroImage } = Astro.props;
+
+// Get all posts for prev/next navigation — same canonical order as the list page
+const allPosts = sortPosts(
+  (await getCollection('blog')).filter(p => !p.data.hidden)
+);
+
+const currentIndex = allPosts.findIndex(p => p.id === id);
+const prevPost = currentIndex < allPosts.length - 1 ? allPosts[currentIndex + 1] : null;
+const nextPost = currentIndex > 0 ? allPosts[currentIndex - 1] : null;
+
+const articleUrl = `${SITE_URL}/blog/${id}`;
+
+// Calculate reading time (Japanese: ~500 chars/min)
+const slotContent = await Astro.slots.render('default');
+const textLength = slotContent.replace(/<[^>]*>/g, '').length;
+const readingTime = Math.max(1, Math.ceil(textLength / 500));
+---
+
+<BaseLayout title={title} description={description} image={heroImage} article={true}>
+  <Header />
+  <main class="container">
+    <article>
+      <header class="article-header">
+        <h1 class="article-title">{title}</h1>
+        <div class="article-meta">
+          <span class="meta-item">
+            <iconify-icon icon="material-symbols:calendar-today-outline" width="14" height="14" aria-hidden="true"></iconify-icon>
+            <FormattedDate date={pubDate} />
+          </span>
+          {updatedDate && (
+            <span class="meta-item">
+              <iconify-icon icon="material-symbols:update" width="14" height="14" aria-hidden="true"></iconify-icon>
+              <FormattedDate date={updatedDate} />
+            </span>
+          )}
+          <span class="meta-item reading-time">
+            <iconify-icon icon="material-symbols:schedule-outline" width="14" height="14" aria-hidden="true"></iconify-icon>
+            約{readingTime}分
+          </span>
+        </div>
+        {tags.length > 0 && (
+          <div class="article-tags">
+            {tags.map(tag => (
+              <a href={`/tag/${tag}`} class="tag">#{tag}</a>
+            ))}
+          </div>
+        )}
+      </header>
+
+      <div class="article-content">
+        <slot />
+      </div>
+
+      <ShareButtons url={articleUrl} title={title} />
+
+      <ArticleNav
+        prevPost={prevPost ? { id: prevPost.id, title: prevPost.data.title } : null}
+        nextPost={nextPost ? { id: nextPost.id, title: nextPost.data.title } : null}
+      />
+    </article>
+  </main>
+  <Footer />
+
+  <!-- Mermaid: initialise once the page is interactive -->
+  <script>
+    async function initMermaid() {
+      const mermaidElements = document.querySelectorAll('pre.mermaid');
+      if (mermaidElements.length === 0) return;
+
+      const { default: mermaid } = await import('mermaid');
+      const theme = document.documentElement.getAttribute('data-theme');
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: theme === 'dark' ? 'dark' : 'default',
+        securityLevel: 'loose',
+        fontFamily: 'inherit',
+      });
+
+      try {
+        await mermaid.run({ nodes: mermaidElements });
+      } catch (err) {
+        console.error('Mermaid rendering error:', err);
+      }
+    }
+
+    // Re-run mermaid whenever the theme changes so diagrams match the palette
+    function watchTheme() {
+      const observer = new MutationObserver(() => {
+        document.querySelectorAll('pre.mermaid[data-processed]').forEach(el => {
+          el.removeAttribute('data-processed');
+          // Restore original source stored in data-original
+          const original = (el as HTMLElement).dataset.original;
+          if (original) el.textContent = original;
+        });
+        initMermaid();
+      });
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme'],
+      });
+    }
+
+    // Store original diagram source before mermaid replaces the content
+    document.querySelectorAll('pre.mermaid').forEach(el => {
+      (el as HTMLElement).dataset.original = el.textContent ?? '';
+    });
+
+    initMermaid().then(watchTheme);
+  </script>
+
+  <!-- Code copy buttons -->
+  <script>
+    function addCodeCopyButtons() {
+      document.querySelectorAll('pre:not(.mermaid)').forEach(pre => {
+        if (pre.querySelector('.code-copy-btn')) return;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'code-block-wrapper';
+        pre.parentNode?.insertBefore(wrapper, pre);
+        wrapper.appendChild(pre);
+
+        const btn = document.createElement('button');
+        btn.className = 'code-copy-btn';
+        btn.setAttribute('aria-label', 'コードをコピー');
+        btn.innerHTML = '<iconify-icon icon="material-symbols:content-copy-outline" width="14" height="14"></iconify-icon> Copy';
+        btn.addEventListener('click', async () => {
+          const code = pre.querySelector('code')?.textContent || pre.textContent || '';
+          try {
+            await navigator.clipboard.writeText(code);
+          } catch {
+            const ta = document.createElement('textarea');
+            ta.value = code;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          }
+          btn.innerHTML = '<iconify-icon icon="material-symbols:check" width="14" height="14"></iconify-icon> Copied!';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.innerHTML = '<iconify-icon icon="material-symbols:content-copy-outline" width="14" height="14"></iconify-icon> Copy';
+            btn.classList.remove('copied');
+          }, 2000);
+        });
+        wrapper.appendChild(btn);
+      });
+    }
+
+    addCodeCopyButtons();
+  </script>
+
+  <!-- Twitter / X embed widget -->
+  <script is:inline async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</BaseLayout>

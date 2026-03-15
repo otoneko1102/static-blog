@@ -1,0 +1,26 @@
+---
+title: "【備忘録】Windows 11でサインインオプションを設定できないときの対処法"
+description: ""
+pubDate: "2025-11-16T01:38:48.886Z"
+updatedDate: "2025-11-16T10:37:44.816Z"
+tags: ["備忘録"]
+pinned: false
+---
+ノートPCが修理から帰ってきた後に、顔認証でPCにログインできなくなったので再設定しようとしたところ、以下のような表示が出て再設定すらできなくなり困った。
+
+![0a4637de8462b692.png](/files/windows-signin-options/0a4637de8462b692.png)
+「これらの設定の一部は、organizationによって管理されています。」
+いやこのノートPCは個人用ですけども。
+解除する方法を調べてもなかなか出てこなかったので、Gemini 2.5 Proとコネコネしていたら直ったのでここにまとめようと思う。
+
+### 手順
+
+1. レジストリエディタを起動 (`Win` + `R` で `regedit` と入力)
+2. `HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System` 内の `AllowDomainPINLogon` の値を削除
+3. `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\default\Settings` 内の `AllowDomainPINLogon` を削除
+
+### 結果
+
+直った！
+
+レジストリエディタを弄るという性質上、実行は自己責任でお願いしたい。

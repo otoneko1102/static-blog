@@ -1,0 +1,30 @@
+---
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map(post => ({
+    params: { id: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const redirectUrl = `/blog/${post.id}`;
+---
+
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="refresh" content={`0;url=${redirectUrl}`} />
+  <link rel="canonical" href={redirectUrl} />
+  <title>リダイレクト中...</title>
+  <script is:inline define:vars={{ redirectUrl }}>
+    window.location.replace(redirectUrl);
+  </script>
+</head>
+<body>
+  <p>リダイレクト中... <a href={redirectUrl}>こちらをクリック</a></p>
+</body>
+</html>

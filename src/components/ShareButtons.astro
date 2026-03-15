@@ -1,0 +1,56 @@
+---
+interface Props {
+  url: string;
+  title: string;
+}
+
+const { url, title } = Astro.props;
+const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`;
+---
+
+<div class="share-buttons">
+  <a href={twitterUrl} target="_blank" rel="noopener noreferrer" class="share-btn share-btn-twitter">
+    <iconify-icon icon="simple-icons:x" width="14" height="14" aria-hidden="true"></iconify-icon>
+    ポスト
+  </a>
+  <button class="share-btn share-btn-copy" id="copy-url-btn" data-url={url} aria-label="リンクをコピー">
+    <iconify-icon id="copy-icon" icon="material-symbols:link" width="16" height="16" aria-hidden="true"></iconify-icon>
+    リンクをコピー
+  </button>
+</div>
+
+<script>
+  const btn = document.getElementById('copy-url-btn') as HTMLButtonElement | null;
+  const copyIcon = document.getElementById('copy-icon');
+
+  btn?.addEventListener('click', async () => {
+    const url = btn.getAttribute('data-url') || window.location.href;
+
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Fallback for older browsers / non-secure contexts
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+
+    if (copyIcon) copyIcon.setAttribute('icon', 'material-symbols:check-circle-outline');
+    const label = btn.querySelector('iconify-icon + text, iconify-icon');
+    // Update the text node directly
+    const textNode = Array.from(btn.childNodes).find(n => n.nodeType === Node.TEXT_NODE && n.textContent?.trim());
+    if (textNode) textNode.textContent = ' コピーしました！';
+    btn.classList.add('copied');
+
+    setTimeout(() => {
+      if (copyIcon) copyIcon.setAttribute('icon', 'material-symbols:link');
+      if (textNode) textNode.textContent = ' リンクをコピー';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+</script>

@@ -1,0 +1,31 @@
+---
+interface Props {
+  prevPost: { id: string; title: string } | null;
+  nextPost: { id: string; title: string } | null;
+}
+
+const { prevPost, nextPost } = Astro.props;
+---
+
+{(prevPost || nextPost) && (
+  <nav class="article-nav">
+    {prevPost ? (
+      <a href={`/blog/${prevPost.id}`}>
+        <div class="nav-label">
+          <iconify-icon icon="material-symbols:arrow-back" width="14" height="14" aria-hidden="true"></iconify-icon>
+          前の記事
+        </div>
+        <div class="nav-title">{prevPost.title}</div>
+      </a>
+    ) : <div />}
+    {nextPost ? (
+      <a href={`/blog/${nextPost.id}`} class="nav-next">
+        <div class="nav-label">
+          次の記事
+          <iconify-icon icon="material-symbols:arrow-forward" width="14" height="14" aria-hidden="true"></iconify-icon>
+        </div>
+        <div class="nav-title">{nextPost.title}</div>
+      </a>
+    ) : <div />}
+  </nav>
+)}
