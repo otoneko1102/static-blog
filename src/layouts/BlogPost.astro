@@ -82,10 +82,29 @@ const readingTime = Math.max(1, Math.ceil(textLength / 500));
   </main>
   <Footer />
 
+  <!-- KaTeX fallback: render plain-text delimiters that were not converted at build time -->
+  <script>
+    import renderMathInElement from 'katex/contrib/auto-render';
+
+    const articleRoot = document.querySelector('.article-content');
+    if (articleRoot) {
+      // @ts-ignore
+      renderMathInElement(articleRoot, {
+        throwOnError: false,
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '\\[', right: '\\]', display: true },
+          { left: '$', right: '$', display: false },
+          { left: '\\(', right: '\\)', display: false },
+        ],
+      });
+    }
+  </script>
+
   <!-- Mermaid: initialise once the page is interactive -->
   <script>
     async function initMermaid() {
-      const mermaidElements = document.querySelectorAll('pre.mermaid');
+      const mermaidElements = document.querySelectorAll<HTMLElement>('pre.mermaid');
       if (mermaidElements.length === 0) return;
 
       const { default: mermaid } = await import('mermaid');
