@@ -21,14 +21,14 @@ function toJstDate(val: unknown): Date {
     return new Date(`${s}T00:00:00+09:00`);
   }
 
-  // "YYYY-MM-DD HH:mm" — date + time (hour:minute), interpret as JST
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s)) {
-    return new Date(`${s.replace(" ", "T")}:00+09:00`);
-  }
-
-  // "YYYY-MM-DD HH:mm:ss" — with seconds, interpret as JST
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) {
-    return new Date(`${s.replace(" ", "T")}+09:00`);
+  // "YYYY-MM-DD HH:mm" / "YYYY-MM-DD H:m" / "YYYY-MM-DD HH:mm:ss" — interpret as JST
+  const datetimeMatch = s.match(/^(\d{4}-\d{2}-\d{2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
+  if (datetimeMatch) {
+    const [, date, hour, minute, second] = datetimeMatch;
+    const hh = hour.padStart(2, '0');
+    const mm = minute.padStart(2, '0');
+    const ss = (second ?? '0').padStart(2, '0');
+    return new Date(`${date}T${hh}:${mm}:${ss}+09:00`);
   }
 
   // ISO 8601 / RFC 2822 / anything else — let the JS engine handle it

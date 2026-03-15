@@ -136,22 +136,77 @@ function buildAudio(src) {
 }
 
 function buildPdf(src, alt) {
+  const label = alt || "PDF";
+  // Desktop: iframe embed
+  // Mobile: fallback card with a direct link (iOS Safari / Android cannot
+  //         reliably render PDFs inside iframes)
   return {
     type: "element",
     tagName: "div",
     properties: { className: ["pdf-embed"] },
     children: [
+      // ── desktop iframe ──────────────────────────────────────────────
       {
         type: "element",
-        tagName: "iframe",
-        properties: {
-          src,
-          width: "100%",
-          height: "600",
-          style: "border: none; border-radius: 8px;",
-          title: alt || "PDF",
-        },
-        children: [],
+        tagName: "div",
+        properties: { className: ["pdf-desktop"] },
+        children: [
+          {
+            type: "element",
+            tagName: "iframe",
+            properties: {
+              src,
+              width: "100%",
+              height: "600",
+              style: "border: none; border-radius: 8px; display: block;",
+              title: label,
+            },
+            children: [],
+          },
+        ],
+      },
+      // ── mobile fallback card ─────────────────────────────────────────
+      {
+        type: "element",
+        tagName: "div",
+        properties: { className: ["pdf-mobile"] },
+        children: [
+          {
+            type: "element",
+            tagName: "a",
+            properties: {
+              href: src,
+              target: "_blank",
+              rel: ["noopener", "noreferrer"],
+              className: ["pdf-link"],
+            },
+            children: [
+              {
+                type: "element",
+                tagName: "iconify-icon",
+                properties: {
+                  icon: "material-symbols:picture-as-pdf",
+                  width: "32",
+                  height: "32",
+                  "aria-hidden": "true",
+                },
+                children: [],
+              },
+              {
+                type: "element",
+                tagName: "span",
+                properties: { className: ["pdf-link-label"] },
+                children: [{ type: "text", value: label }],
+              },
+              {
+                type: "element",
+                tagName: "span",
+                properties: { className: ["pdf-link-hint"] },
+                children: [{ type: "text", value: "タップして PDF を開く" }],
+              },
+            ],
+          },
+        ],
       },
     ],
   };
