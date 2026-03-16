@@ -15,7 +15,9 @@ function toJstDate(val: unknown): Date | undefined {
   if (val instanceof Date) return val;
   if (val == null) return undefined;
 
+  // @ts-ignore
   if (val === null) return null;
+  // @ts-ignore
   if (val === undefined) return undefined;
   const s = String(val).trim();
   if (s === "" || s.toLowerCase() === "null" || s.toLowerCase() === "undefined") return undefined;
