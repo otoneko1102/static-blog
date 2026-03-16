@@ -1,8 +1,9 @@
+import type { APIRoute } from "astro";
 import rss from "@astrojs/rss";
 import { getCollection } from "astro:content";
 import { SITE_TITLE, SITE_DESCRIPTION, SITE_URL, sortPosts } from "../consts";
 
-export async function GET(context) {
+export const GET: APIRoute = async (context) => {
   const posts = sortPosts(
     (await getCollection("blog")).filter((p) => !p.data.hidden),
   );
@@ -18,4 +19,4 @@ export async function GET(context) {
       link: `/blog/${post.id}`,
     })),
   });
-}
+};
