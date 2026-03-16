@@ -99,8 +99,7 @@ async function fetchOgp(url) {
       "";
 
     const image =
-      getMeta(html, "og:image", "og:image:secure_url", "twitter:image") ??
-      null;
+      getMeta(html, "og:image", "og:image:secure_url", "twitter:image") ?? null;
 
     const siteName =
       getMeta(html, "og:site_name") ??
@@ -184,11 +183,12 @@ function buildCard(ogp, url, customLabel) {
       ["rel", "noopener noreferrer"],
     ],
     [
-      jsxElem("div", [["class", "link-card-body"]], [
-        jsxElem("div", [["class", "link-card-text"]], textChildren),
-        imgElem,
-      ]),
-    ]
+      jsxElem(
+        "div",
+        [["class", "link-card-body"]],
+        [jsxElem("div", [["class", "link-card-text"]], textChildren), imgElem],
+      ),
+    ],
   );
 }
 
@@ -217,11 +217,8 @@ function isCardLine(line) {
     m.length === 2 &&
     m[0].type === "text" &&
     m[0].value === "@" &&
-    m[1].type === "link" &&
-    (      // remote URLs or local site paths
-      /^https?:\/\//.test(m[1].url) ||
-      /^\//.test(m[1].url)
-    )
+    m[1].type === "link" && // remote URLs or local site paths
+    (/^https?:\/\//.test(m[1].url) || /^\//.test(m[1].url))
   );
 }
 

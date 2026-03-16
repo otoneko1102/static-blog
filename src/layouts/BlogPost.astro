@@ -28,6 +28,8 @@ const {
   heroImage,
 } = Astro.props;
 
+const sortedTags = [...tags].sort((a, b) => a.localeCompare(b, "ja"));
+
 // Get all posts for prev/next navigation — same canonical order as the list page
 const allPosts = sortPosts(
   (await getCollection("blog")).filter((p) => !p.data.hidden),
@@ -89,9 +91,9 @@ const readingTime = Math.max(1, Math.ceil(textLength / 500));
           </span>
         </div>
         {
-          tags.length > 0 && (
+          sortedTags.length > 0 && (
             <div class="article-tags">
-              {tags.map((tag) => (
+              {sortedTags.map((tag) => (
                 <a href={`/tag/${tag}`} class="tag">
                   #{tag}
                 </a>
@@ -126,8 +128,8 @@ const readingTime = Math.max(1, Math.ceil(textLength / 500));
       if (!articleRoot) return;
 
       try {
-        // @ts-ignore
         const { default: renderMathInElement } =
+          // @ts-ignore
           await import("katex/dist/contrib/auto-render.mjs");
         renderMathInElement(articleRoot, {
           throwOnError: false,

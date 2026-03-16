@@ -3,10 +3,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import FormattedDate from "../components/FormattedDate.astro";
+import type { CollectionEntry } from "astro:content";
 import { getCollection } from "astro:content";
 import { SITE_TITLE, SITE_DESCRIPTION, sortPosts } from "../consts";
 
-const allPosts = sortPosts(
+type BlogPost = CollectionEntry<"blog">;
+
+const allPosts: BlogPost[] = sortPosts(
   (await getCollection("blog")).filter((p) => !p.data.hidden),
 );
 
@@ -158,9 +161,11 @@ const allTags = [...new Set(allPosts.flatMap((p) => p.data.tags))].sort(
                 </div>
                 {post.data.tags.length > 0 && (
                   <div class="card-tags">
-                    {post.data.tags.map((tag) => (
-                      <span class="tag">#{tag}</span>
-                    ))}
+                    {[...post.data.tags]
+                      .sort((a, b) => a.localeCompare(b, "ja"))
+                      .map((tag) => (
+                        <span class="tag">#{tag}</span>
+                      ))}
                   </div>
                 )}
               </a>

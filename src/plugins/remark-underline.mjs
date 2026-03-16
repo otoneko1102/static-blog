@@ -68,7 +68,10 @@ export default function remarkUnderline() {
 
       while ((match = UNDERLINE_PLAIN_REGEX.exec(text)) !== null) {
         if (match.index > lastIndex) {
-          children.push({ type: "text", value: text.slice(lastIndex, match.index) });
+          children.push({
+            type: "text",
+            value: text.slice(lastIndex, match.index),
+          });
         }
         children.push({ type: "html", value: `<u>${match[1]}</u>` });
         lastIndex = match.index + match[0].length;
@@ -130,11 +133,13 @@ export default function remarkUnderline() {
             buffer = [];
           } else {
             // Close underline: serialize buffer as <u>…</u>
-            const inner = buffer.map((t) =>
-              t.kind === "text"
-                ? serializeInline({ type: "text", value: t.value })
-                : serializeInline(t.node)
-            ).join("");
+            const inner = buffer
+              .map((t) =>
+                t.kind === "text"
+                  ? serializeInline({ type: "text", value: t.value })
+                  : serializeInline(t.node),
+              )
+              .join("");
             out.push({ type: "html", value: `<u>${inner}</u>` });
             buffer = null;
           }
@@ -179,10 +184,16 @@ export default function remarkUnderline() {
       while (i < kids.length) {
         const cur = kids[i];
 
-        if (cur.type !== "text") { i++; continue; }
+        if (cur.type !== "text") {
+          i++;
+          continue;
+        }
 
         const openMatch = cur.value.match(/^([\s\S]*?)(~~+)$/);
-        if (!openMatch) { i++; continue; }
+        if (!openMatch) {
+          i++;
+          continue;
+        }
 
         const tildes = openMatch[2];
         const beforeTildes = openMatch[1];
@@ -205,10 +216,14 @@ export default function remarkUnderline() {
           j++;
         }
 
-        if (!closeNode || inner.length === 0) { i++; continue; }
+        if (!closeNode || inner.length === 0) {
+          i++;
+          continue;
+        }
 
         const replacement = [];
-        if (beforeTildes) replacement.push({ type: "text", value: beforeTildes });
+        if (beforeTildes)
+          replacement.push({ type: "text", value: beforeTildes });
 
         const innerHtml = inner.map(serializeInline).join("");
         replacement.push({ type: "html", value: `<del>${innerHtml}</del>` });

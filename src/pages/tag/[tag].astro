@@ -3,12 +3,19 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import FormattedDate from "../../components/FormattedDate.astro";
+import type { CollectionEntry } from "astro:content";
 import { getCollection } from "astro:content";
 import { sortPosts } from "../../consts";
 
+type BlogPost = CollectionEntry<"blog">;
+
 export async function getStaticPaths() {
-  const allPosts = (await getCollection("blog")).filter((p) => !p.data.hidden);
-  const allTags = [...new Set(allPosts.flatMap((p) => p.data.tags))];
+  const allPosts: BlogPost[] = (await getCollection("blog")).filter(
+    (p) => !p.data.hidden,
+  );
+  const allTags = [...new Set(allPosts.flatMap((p) => p.data.tags))].sort(
+    (a, b) => a.localeCompare(b, "ja"),
+  );
 
   return allTags.map((tag) => ({
     params: { tag },
@@ -19,7 +26,10 @@ export async function getStaticPaths() {
   }));
 }
 
-const { tag, posts } = Astro.props;
+const { tag, posts } = Astro.props as {
+  tag: string;
+  posts: BlogPost[];
+};
 ---
 
 <BaseLayout title={`#${tag} の記事`} description={`タグ「${tag}」の記事一覧`}>

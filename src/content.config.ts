@@ -20,7 +20,8 @@ function toJstDate(val: unknown): Date | undefined {
   // @ts-ignore
   if (val === undefined) return undefined;
   const s = String(val).trim();
-  if (s === "" || s.toLowerCase() === "null" || s.toLowerCase() === "undefined") return undefined;
+  if (s === "" || s.toLowerCase() === "null" || s.toLowerCase() === "undefined")
+    return undefined;
 
   // "YYYY-MM-DD" — date only, interpret as JST midnight
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
@@ -44,7 +45,10 @@ function toJstDate(val: unknown): Date | undefined {
 }
 
 /** Zod schema that accepts the human-friendly JST date formats above. */
-const jstDate = z.preprocess(toJstDate, z.date().nullable());
+const jstDate = z.preprocess(toJstDate, z.date());
+
+/** Version of `jstDate` that supports `null` (for optional dates like updatedDate). */
+const jstNullableDate = z.preprocess(toJstDate, z.date().nullable());
 
 const blog = defineCollection({
   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
@@ -52,8 +56,11 @@ const blog = defineCollection({
     title: z.string(),
     description: z.string().default(""),
     pubDate: jstDate,
-    updatedDate: z.union([jstDate, z.null()]).optional(),
-    tags: z.array(z.string()).default([]),
+    updatedDate: z.union([jstNullableDate, z.null()]).optional(),
+    tags: z
+      .array(z.string())
+      .default([])
+      .transform((tags) => [...tags].sort((a, b) => a.localeCompare(b, "ja"))),
     pinned: z.boolean().default(false),
     heroImage: z.string().optional(),
     hidden: z.boolean().default(false),
