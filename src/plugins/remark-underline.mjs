@@ -1,32 +1,226 @@
 /**
- * remark plugin: Proper __underline__ support + orphaned ~~ fix
+ * remark plugin: Proper __underline__ support
  *
- * Pass 1 — word-boundary strong nodes from __:
- *   remark-parse already converts __text__ → strong node.
- *   We detect whether the strong came from __ vs ** by inspecting
- *   the source file at the node's start position, then set
- *   data.hName = 'u' so mdast-util-to-hast renders it as <u>.
+ * Three passes:
  *
- * Pass 2 — non-word-boundary __text__ in raw text nodes:
- *   e.g. "日本語__テキスト__日本語" stays as a raw text node because
- *   micromark's flanking-run rules require Unicode alphanumerics NOT to
- *   directly adjoin the __ delimiter.
- *   We visit those text nodes and convert __text__ → <u> HTML nodes.
+ * Pass 1 — strong nodes that came from __:
+ *   remark-gfm parses __text__ → strong, just like **text**.
+ *   We distinguish them by looking at source[start..start+2].
+ *   Works for __STR1**STR2**STR3__ (outer __ wraps entire strong).
  *
- * Pass 3 — orphaned ~~ around inline nodes:
- *   GFM strikethrough fails when ~~ is adjacent to punctuation like **,
- *   e.g. "くる~~**脆弱性**~~を" — the ~~ never becomes a del node.
- *   After remark-parse / remarkGfm the AST has:
- *     text("くる~~"), strong("脆弱性"), text("~~を")
- *   We scan paragraph children for this pattern and wrap the inner
- *   nodes inside an HTML <del>…</del> fragment.
+ * Pass 2 — plain text nodes with literal __…__:
+ *   When __ flanking rules fail (e.g. Japanese on both sides),
+ *   remark leaves the raw text. We regex-replace those.
+ *
+ * Pass 3 — cross-node __ pairs in a paragraph:
+ *   Case: __Japanese<strong>text</strong>more__ stays as separate
+ *   text/strong nodes because the __ was eaten partially into text.
+ *   We tokenize paragraph children by splitting text on "__",
+ *   locate paired markers, and serialize the span as <u>…</u>.
+ *
+ * Pass 4 — orphaned ~~ around inline nodes (GFM strikethrough edge case).
  *
  * Place this plugin AFTER remarkGfm in the plugin list.
  */
 import { visit } from "unist-util-visit";
 
-// Matches __text__ that was NOT captured by the parser (non-word-boundary).
-const UNDERLINE_REGEX = /__([^_\n]+?)__/g;
+// Matches plain-text __…__ that the parser left as raw text (non-word-boundary).
+const UNDERLINE_PLAIN_REGEX = /__([^_\n]+?)__/g;
+
+export default function remarkUnderline() {
+  return (tree, file) => {
+    const source = String(file.value ?? file);
+
+    // ── Pass 1: strong nodes already created by remark-parse ──────────────
+    // Detect whether delimiter is __ (underline) or ** (bold) by reading
+    // the file source at the node's character offset.
+    visit(tree, "strong", (node) => {
+      const start = node.position?.start?.offset;
+      const end = node.position?.end?.offset;
+      if (typeof start !== "number" || typeof end !== "number") return;
+
+      // The position range covers the delimiters themselves.
+      // Check the first 2 chars of the range for "__".
+      const startDelim = source.slice(start, start + 2);
+      const endDelim = source.slice(end - 2, end);
+
+      if (startDelim === "__" && endDelim === "__") {
+        node.data = node.data ?? {};
+        node.data.hName = "u";
+        node.data.hProperties = node.data.hProperties ?? {};
+      }
+    });
+
+    // ── Pass 2: text nodes with un-parsed __text__ (non-word boundaries) ──
+    // e.g. "日本語__テキスト__日本語" stays as plain text because micromark's
+    // flanking-run rules require Unicode alphanumerics NOT to adjoin __.
+    visit(tree, "text", (node, index, parent) => {
+      if (!parent || typeof index !== "number") return;
+
+      const text = node.value;
+      UNDERLINE_PLAIN_REGEX.lastIndex = 0;
+      if (!UNDERLINE_PLAIN_REGEX.test(text)) return;
+      UNDERLINE_PLAIN_REGEX.lastIndex = 0;
+
+      const children = [];
+      let lastIndex = 0;
+      let match;
+
+      while ((match = UNDERLINE_PLAIN_REGEX.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+          children.push({ type: "text", value: text.slice(lastIndex, match.index) });
+        }
+        children.push({ type: "html", value: `<u>${match[1]}</u>` });
+        lastIndex = match.index + match[0].length;
+      }
+
+      if (lastIndex < text.length) {
+        children.push({ type: "text", value: text.slice(lastIndex) });
+      }
+
+      if (children.length > 0) {
+        parent.children.splice(index, 1, ...children);
+        return index + children.length;
+      }
+    });
+
+    // ── Pass 3: cross-node __ pairs in a paragraph ────────────────────────
+    // Handles cases like:
+    //   __Japanese<strong>text</strong>more__
+    // which remark leaves as: text("__Japanese"), strong("text"), text("more__")
+    // We tokenize the whole paragraph's children by splitting text nodes on "__",
+    // then wrap everything between paired markers into <u>…</u>.
+    const BLOCK_TYPES = new Set([
+      "paragraph",
+      "listItem",
+      "blockquote",
+      "tableCell",
+    ]);
+
+    visit(tree, (node) => {
+      if (!BLOCK_TYPES.has(node.type) || !Array.isArray(node.children)) return;
+
+      // Tokenize: each child → one or more tokens
+      // token types: { kind: "marker" } | { kind: "text", value } | { kind: "node", node }
+      const tokens = [];
+      for (const child of node.children) {
+        if (child.type === "text") {
+          const parts = child.value.split("__");
+          for (let p = 0; p < parts.length; p++) {
+            if (p > 0) tokens.push({ kind: "marker" });
+            if (parts[p] !== "") tokens.push({ kind: "text", value: parts[p] });
+          }
+        } else {
+          tokens.push({ kind: "node", node: child });
+        }
+      }
+
+      // Count markers; if fewer than 2 there's nothing to do
+      const markerCount = tokens.filter((t) => t.kind === "marker").length;
+      if (markerCount < 2) return;
+
+      // Build output by pairing markers
+      const out = [];
+      let buffer = null; // null = outside underline, [] = collecting inside underline
+
+      for (const tok of tokens) {
+        if (tok.kind === "marker") {
+          if (buffer === null) {
+            // Start collecting underline content
+            buffer = [];
+          } else {
+            // Close underline: serialize buffer as <u>…</u>
+            const inner = buffer.map((t) =>
+              t.kind === "text"
+                ? serializeInline({ type: "text", value: t.value })
+                : serializeInline(t.node)
+            ).join("");
+            out.push({ type: "html", value: `<u>${inner}</u>` });
+            buffer = null;
+          }
+          continue;
+        }
+
+        if (buffer !== null) {
+          buffer.push(tok);
+        } else {
+          // Outside underline — emit as original node type
+          if (tok.kind === "node") out.push(tok.node);
+          else out.push({ type: "text", value: tok.value });
+        }
+      }
+
+      // Unclosed marker: treat the opening __ as literal text
+      if (buffer !== null) {
+        out.push({ type: "text", value: "__" });
+        for (const t of buffer) {
+          if (t.kind === "node") out.push(t.node);
+          else out.push({ type: "text", value: t.value });
+        }
+      }
+
+      // Only replace if something actually changed
+      const changed =
+        out.length !== node.children.length ||
+        out.some((o, i) => o !== node.children[i]);
+      if (changed) node.children = out;
+    });
+
+    // ── Pass 4: orphaned ~~ around inline nodes ────────────────────────────
+    // When ~~ is followed/preceded by punctuation (**, __, etc.) the GFM
+    // strikethrough tokeniser does not fire. We end up with literal text nodes
+    // like "~~" sandwiching strong/em/html nodes inside a paragraph.
+    // We scan every block container and collapse those sequences.
+    visit(tree, (node) => {
+      if (!BLOCK_TYPES.has(node.type) || !Array.isArray(node.children)) return;
+
+      const kids = node.children;
+      let i = 0;
+      while (i < kids.length) {
+        const cur = kids[i];
+
+        if (cur.type !== "text") { i++; continue; }
+
+        const openMatch = cur.value.match(/^([\s\S]*?)(~~+)$/);
+        if (!openMatch) { i++; continue; }
+
+        const tildes = openMatch[2];
+        const beforeTildes = openMatch[1];
+
+        let j = i + 1;
+        const inner = [];
+        let closeNode = null;
+        let afterTildes = "";
+
+        while (j < kids.length) {
+          const candidate = kids[j];
+          if (candidate.type === "text") {
+            if (candidate.value.startsWith(tildes)) {
+              afterTildes = candidate.value.slice(tildes.length);
+              closeNode = candidate;
+            }
+            break;
+          }
+          inner.push(candidate);
+          j++;
+        }
+
+        if (!closeNode || inner.length === 0) { i++; continue; }
+
+        const replacement = [];
+        if (beforeTildes) replacement.push({ type: "text", value: beforeTildes });
+
+        const innerHtml = inner.map(serializeInline).join("");
+        replacement.push({ type: "html", value: `<del>${innerHtml}</del>` });
+
+        if (afterTildes) replacement.push({ type: "text", value: afterTildes });
+
+        kids.splice(i, j - i + 1, ...replacement);
+        // Don't advance — replacement may need further scanning
+      }
+    });
+  };
+}
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -71,149 +265,4 @@ function serializeInline(node) {
         return node.children.map(serializeInline).join("");
       return node.value ?? "";
   }
-}
-
-// ── main plugin ────────────────────────────────────────────────────────────
-
-export default function remarkUnderline() {
-  return (tree, file) => {
-    const source = String(file.value ?? file);
-
-    // ── Pass 1: strong nodes already created by remark-parse ──────────────
-    visit(tree, "strong", (node) => {
-      if (!node.position?.start?.offset) return;
-      const offset = node.position.start.offset;
-      if (offset + 1 >= source.length) return;
-
-      if (source[offset] === "_" && source[offset + 1] === "_") {
-        node.data = node.data ?? {};
-        node.data.hName = "u";
-        node.data.hProperties = node.data.hProperties ?? {};
-      }
-    });
-
-    // ── Pass 2: text nodes with un-parsed __text__ (non-word boundaries) ──
-    visit(tree, "text", (node, index, parent) => {
-      if (!parent || typeof index !== "number") return;
-
-      const text = node.value;
-      UNDERLINE_REGEX.lastIndex = 0;
-      if (!UNDERLINE_REGEX.test(text)) return;
-      UNDERLINE_REGEX.lastIndex = 0;
-
-      const children = [];
-      let lastIndex = 0;
-      let match;
-
-      while ((match = UNDERLINE_REGEX.exec(text)) !== null) {
-        if (match.index > lastIndex) {
-          children.push({
-            type: "text",
-            value: text.slice(lastIndex, match.index),
-          });
-        }
-        children.push({
-          type: "html",
-          value: `<u>${match[1]}</u>`,
-        });
-        lastIndex = match.index + match[0].length;
-      }
-
-      if (lastIndex < text.length) {
-        children.push({ type: "text", value: text.slice(lastIndex) });
-      }
-
-      if (children.length > 0) {
-        parent.children.splice(index, 1, ...children);
-        return index + children.length;
-      }
-    });
-
-    // ── Pass 3: orphaned ~~ around inline nodes ────────────────────────────
-    // When ~~ is followed/preceded by punctuation (**, __, etc.) the GFM
-    // strikethrough tokeniser does not fire. We end up with literal text nodes
-    // like "~~" sandwiching strong/em/html nodes inside a paragraph.
-    // We scan every block container and collapse those sequences.
-    const BLOCK_TYPES = new Set([
-      "paragraph",
-      "listItem",
-      "blockquote",
-      "tableCell",
-    ]);
-
-    visit(tree, (node) => {
-      if (!BLOCK_TYPES.has(node.type) || !Array.isArray(node.children)) return;
-
-      const kids = node.children;
-      let i = 0;
-      while (i < kids.length) {
-        const cur = kids[i];
-
-        // A text node that ends with one or more ~~ pairs
-        if (cur.type !== "text") {
-          i++;
-          continue;
-        }
-
-        const openMatch = cur.value.match(/^([\s\S]*?)(~~+)$/);
-        if (!openMatch) {
-          i++;
-          continue;
-        }
-
-        const tildes = openMatch[2]; // e.g. "~~"
-        const beforeTildes = openMatch[1]; // text before the tildes
-
-        // Collect consecutive non-text inline nodes until we find a text that
-        // starts with the same tilde string.
-        let j = i + 1;
-        const inner = [];
-        let closeNode = null;
-        let afterTildes = "";
-
-        while (j < kids.length) {
-          const candidate = kids[j];
-
-          if (candidate.type === "text") {
-            // Use startsWith to avoid template-literal regex escape issues
-            if (candidate.value.startsWith(tildes)) {
-              afterTildes = candidate.value.slice(tildes.length);
-              closeNode = candidate;
-            }
-            break; // stop at the first text node regardless
-          }
-
-          inner.push(candidate);
-          j++;
-        }
-
-        if (!closeNode || inner.length === 0) {
-          i++;
-          continue;
-        }
-
-        // Build the replacement nodes
-        const replacement = [];
-
-        // text before the opening tildes
-        if (beforeTildes) {
-          replacement.push({ type: "text", value: beforeTildes });
-        }
-
-        // <del> wrapping the inner nodes serialised as HTML
-        const innerHtml = inner.map(serializeInline).join("");
-        replacement.push({ type: "html", value: `<del>${innerHtml}</del>` });
-
-        // text after the closing tildes
-        if (afterTildes) {
-          replacement.push({ type: "text", value: afterTildes });
-        }
-
-        // Splice: remove cur (i), inner nodes (i+1…j-1), closeNode (j)
-        kids.splice(i, j - i + 1, ...replacement);
-
-        // Don't advance i — the replacement nodes may themselves need scanning
-      }
-    });
-  };
 }

@@ -14,6 +14,8 @@ import { z } from "astro/zod";
 function toJstDate(val: unknown): Date {
   if (val instanceof Date) return val;
 
+  if (val === null) return null;
+  if (val === undefined) return undefined;
   const s = String(val).trim();
 
   // "YYYY-MM-DD" — date only, interpret as JST midnight
@@ -38,7 +40,7 @@ function toJstDate(val: unknown): Date {
 }
 
 /** Zod schema that accepts the human-friendly JST date formats above. */
-const jstDate = z.preprocess(toJstDate, z.date());
+const jstDate = z.preprocess(toJstDate, z.date().nullable());
 
 const blog = defineCollection({
   loader: glob({ base: "./src/content/blog", pattern: "**/*.{md,mdx}" }),
