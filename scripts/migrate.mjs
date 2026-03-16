@@ -1,23 +1,23 @@
 /**
  * Migration script: Convert legacy blog data to Astro content collection
- * 
+ *
  * Usage: node scripts/migrate.mjs
  */
-import fs from 'fs-extra';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from "fs-extra";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.join(__dirname, "..");
 
-const LEGACY_DIR = path.join(ROOT, '.legacy');
-const METADATA_PATH = path.join(LEGACY_DIR, 'lib', 'metadata.json');
-const PAGES_DIR = path.join(LEGACY_DIR, 'lib', 'pages');
-const FILES_DIR = path.join(LEGACY_DIR, 'lib', 'pages', 'files');
+const LEGACY_DIR = path.join(ROOT, ".legacy");
+const METADATA_PATH = path.join(LEGACY_DIR, "lib", "metadata.json");
+const PAGES_DIR = path.join(LEGACY_DIR, "lib", "pages");
+const FILES_DIR = path.join(LEGACY_DIR, "lib", "pages", "files");
 
-const OUTPUT_CONTENT_DIR = path.join(ROOT, 'src', 'content', 'blog');
-const OUTPUT_PUBLIC_FILES = path.join(ROOT, 'public', 'files');
-const OUTPUT_PUBLIC_ASSETS = path.join(ROOT, 'public');
+const OUTPUT_CONTENT_DIR = path.join(ROOT, "src", "content", "blog");
+const OUTPUT_PUBLIC_FILES = path.join(ROOT, "public", "files");
+const OUTPUT_PUBLIC_ASSETS = path.join(ROOT, "public");
 
 /**
  * Convert custom markdown syntax to standard/HTML equivalents
@@ -25,24 +25,32 @@ const OUTPUT_PUBLIC_ASSETS = path.join(ROOT, 'public');
  */
 function convertCustomSyntax(content) {
   // Convert :::...:::  (Mermaid) → ```mermaid code blocks
-  content = content.replace(/^:::\s*\n([\s\S]*?)\n:::\s*$/gm, (match, inner) => {
-    return '```mermaid\n' + inner.trim() + '\n```';
-  });
+  content = content.replace(
+    /^:::\s*\n([\s\S]*?)\n:::\s*$/gm,
+    (match, inner) => {
+      return "```mermaid\n" + inner.trim() + "\n```";
+    },
+  );
 
   // Convert ^^^SUMMARY...^^^ (Details) → HTML <details><summary>
-  content = content.replace(/^\^\^\^(.+)\n([\s\S]*?)\n\^\^\^\s*$/gm, (match, summary, details) => {
-    return `<details><summary>${summary.trim()}</summary>\n\n${details.trim()}\n\n</details>`;
-  });
+  content = content.replace(
+    /^\^\^\^(.+)\n([\s\S]*?)\n\^\^\^\s*$/gm,
+    (match, summary, details) => {
+      return `<details><summary>${summary.trim()}</summary>\n\n${details.trim()}\n\n</details>`;
+    },
+  );
 
   return content;
 }
 
 async function migrate() {
-  console.log('🚀 Starting migration...');
+  console.log("🚀 Starting migration...");
 
   // Read metadata
   const metadata = await fs.readJson(METADATA_PATH);
-  console.log(`📄 Found ${Object.keys(metadata).length} articles in metadata.json`);
+  console.log(
+    `📄 Found ${Object.keys(metadata).length} articles in metadata.json`,
+  );
 
   // Ensure output dirs
   await fs.ensureDir(OUTPUT_CONTENT_DIR);
@@ -55,7 +63,9 @@ async function migrate() {
   for (const [id, meta] of Object.entries(metadata)) {
     // Skip non-public, and articles without dates
     if (!meta.public || !meta.createdAt) {
-      console.log(`  ⏭️  Skipping "${id}" (public: ${meta.public}, createdAt: ${meta.createdAt})`);
+      console.log(
+        `  ⏭️  Skipping "${id}" (public: ${meta.public}, createdAt: ${meta.createdAt})`,
+      );
       skippedCount++;
       continue;
     }
@@ -68,13 +78,13 @@ async function migrate() {
       continue;
     }
 
-    let content = await fs.readFile(mdPath, 'utf-8');
+    let content = await fs.readFile(mdPath, "utf-8");
 
     // Remove first line if it's the title (# Title)
-    const lines = content.split('\n');
+    const lines = content.split("\n");
     let extractedTitle = meta.title;
-    if (lines[0]?.startsWith('# ')) {
-      extractedTitle = lines[0].replace(/^#\s+/, '').trim();
+    if (lines[0]?.startsWith("# ")) {
+      extractedTitle = lines[0].replace(/^#\s+/, "").trim();
       // Remove markdown link syntax from title if present
       const linkMatch = extractedTitle.match(/^\[(.+?)\]\(.+?\)$/);
       if (linkMatch) {
@@ -82,15 +92,15 @@ async function migrate() {
       }
       lines.shift();
       // Remove empty line after title
-      if (lines[0]?.trim() === '') {
+      if (lines[0]?.trim() === "") {
         lines.shift();
       }
     }
 
-    content = lines.join('\n');
+    content = lines.join("\n");
 
     // Convert /b/{id} links to /blog/{id}
-    content = content.replace(/\(\/b\//g, '(/blog/');
+    content = content.replace(/\(\/b\//g, "(/blog/");
 
     // Convert custom markdown syntax
     content = convertCustomSyntax(content);
@@ -98,7 +108,7 @@ async function migrate() {
     // Build frontmatter
     const frontmatter = {
       title: meta.title || extractedTitle,
-      description: '',
+      description: "",
       pubDate: meta.createdAt,
       ...(meta.updatedAt && { updatedDate: meta.updatedAt }),
       tags: meta.tags || [],
@@ -107,7 +117,7 @@ async function migrate() {
     };
 
     const yamlLines = [
-      '---',
+      "---",
       `title: ${JSON.stringify(frontmatter.title)}`,
       `description: ${JSON.stringify(frontmatter.description)}`,
       `pubDate: ${JSON.stringify(frontmatter.pubDate)}`,
@@ -117,20 +127,22 @@ async function migrate() {
       yamlLines.push(`updatedDate: ${JSON.stringify(frontmatter.updatedDate)}`);
     }
 
-    yamlLines.push(`tags: [${frontmatter.tags.map(t => JSON.stringify(t)).join(', ')}]`);
+    yamlLines.push(
+      `tags: [${frontmatter.tags.map((t) => JSON.stringify(t)).join(", ")}]`,
+    );
     yamlLines.push(`pinned: ${frontmatter.pinned}`);
 
     if (frontmatter.hidden) {
       yamlLines.push(`hidden: true`);
     }
 
-    yamlLines.push('---');
-    yamlLines.push('');
+    yamlLines.push("---");
+    yamlLines.push("");
 
-    const outputContent = yamlLines.join('\n') + content;
+    const outputContent = yamlLines.join("\n") + content;
     const outputPath = path.join(OUTPUT_CONTENT_DIR, `${id}.md`);
 
-    await fs.writeFile(outputPath, outputContent, 'utf-8');
+    await fs.writeFile(outputPath, outputContent, "utf-8");
     console.log(`  ✅ Migrated "${id}" → ${path.relative(ROOT, outputPath)}`);
     migratedCount++;
   }
@@ -145,7 +157,7 @@ async function migrate() {
       if (stat.isDirectory()) {
         await fs.copy(srcDir, destDir, { overwrite: true });
         // Remove manifest.json from public
-        const manifestPath = path.join(destDir, 'manifest.json');
+        const manifestPath = path.join(destDir, "manifest.json");
         if (await fs.exists(manifestPath)) {
           await fs.remove(manifestPath);
         }
@@ -155,14 +167,14 @@ async function migrate() {
   }
 
   // Copy blog assets
-  const blogAssetsDir = path.join(LEGACY_DIR, 'blog-assets');
+  const blogAssetsDir = path.join(LEGACY_DIR, "blog-assets");
   if (await fs.exists(blogAssetsDir)) {
     const assets = await fs.readdir(blogAssetsDir);
     for (const asset of assets) {
       await fs.copy(
         path.join(blogAssetsDir, asset),
         path.join(OUTPUT_PUBLIC_ASSETS, asset),
-        { overwrite: true }
+        { overwrite: true },
       );
       console.log(`  🖼️  Copied ${asset} → public/${asset}`);
     }

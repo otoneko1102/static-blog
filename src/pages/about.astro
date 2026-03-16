@@ -1,8 +1,8 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL } from '../consts';
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL } from "../consts";
 ---
 
 <BaseLayout title="About" description="まろんについて">
@@ -10,19 +10,31 @@ import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL } from '../consts';
   <main class="container">
     <section style="padding: 2em 0;">
       <h1 class="page-heading" style="margin-top: 0;">
-        <iconify-icon icon="material-symbols:person-outline" width="28" height="28" aria-hidden="true"></iconify-icon>
+        <iconify-icon
+          icon="material-symbols:person-outline"
+          width="28"
+          height="28"
+          aria-hidden="true"></iconify-icon>
         About
       </h1>
 
-      <div style="display: flex; align-items: center; gap: 1.5em; margin-bottom: 2em;">
+      <div
+        style="display: flex; align-items: center; gap: 1.5em; margin-bottom: 2em;"
+      >
         <img
           src="/icon.png"
           alt="まろん"
           style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent); margin: 0;"
         />
         <div>
-          <h2 style="margin: 0 0 0.25em; font-size: 1.3rem; border: none; padding: 0;">まろん</h2>
-          <p style="margin: 0; color: var(--text-secondary);">技術とドメインの話が好きな変な人</p>
+          <h2
+            style="margin: 0 0 0.25em; font-size: 1.3rem; border: none; padding: 0;"
+          >
+            まろん
+          </h2>
+          <p style="margin: 0; color: var(--text-secondary);">
+            技術とドメインの話が好きな変な人
+          </p>
         </div>
       </div>
 
@@ -31,26 +43,51 @@ import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL } from '../consts';
         <ul>
           <li>
             <a href={PORTFOLIO_URL} target="_blank" rel="noopener noreferrer">
-              <iconify-icon icon="material-symbols:language" width="16" height="16" aria-hidden="true" style="vertical-align: middle; margin-right: 0.3em;"></iconify-icon>
+              <iconify-icon
+                icon="material-symbols:language"
+                width="16"
+                height="16"
+                aria-hidden="true"
+                style="vertical-align: middle; margin-right: 0.3em;"
+              ></iconify-icon>
               ポートフォリオ
             </a>
           </li>
           <li>
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
-              <iconify-icon icon="simple-icons:github" width="15" height="15" aria-hidden="true" style="vertical-align: middle; margin-right: 0.3em;"></iconify-icon>
+              <iconify-icon
+                icon="simple-icons:github"
+                width="15"
+                height="15"
+                aria-hidden="true"
+                style="vertical-align: middle; margin-right: 0.3em;"
+              ></iconify-icon>
               GitHub
             </a>
           </li>
           <li>
-            <a href={`https://twitter.com/${TWITTER_HANDLE.replace('@', '')}`} target="_blank" rel="noopener noreferrer">
-              <iconify-icon icon="simple-icons:x" width="14" height="14" aria-hidden="true" style="vertical-align: middle; margin-right: 0.3em;"></iconify-icon>
+            <a
+              href={`https://twitter.com/${TWITTER_HANDLE.replace("@", "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <iconify-icon
+                icon="simple-icons:x"
+                width="14"
+                height="14"
+                aria-hidden="true"
+                style="vertical-align: middle; margin-right: 0.3em;"
+              ></iconify-icon>
               Twitter
             </a>
           </li>
         </ul>
 
         <h2>このブログについて</h2>
-        <p>Astroで構築された静的ブログです。GitHub Actionsでビルドし、GitHub Pagesで公開しています。</p>
+        <p>
+          Astroで構築された静的ブログです。GitHub Actionsでビルドし、GitHub
+          Pagesで公開しています。
+        </p>
       </div>
     </section>
   </main>

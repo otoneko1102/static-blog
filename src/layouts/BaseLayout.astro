@@ -1,7 +1,12 @@
 ---
-import { SITE_TITLE, SITE_DESCRIPTION, SITE_URL, TWITTER_HANDLE } from '../consts';
-import '../styles/global.css';
-import 'katex/dist/katex.min.css';
+import {
+  SITE_TITLE,
+  SITE_DESCRIPTION,
+  SITE_URL,
+  TWITTER_HANDLE,
+} from "../consts";
+import "../styles/global.css";
+import "katex/dist/katex.min.css";
 
 interface Props {
   title?: string;
@@ -14,7 +19,7 @@ interface Props {
 const {
   title = SITE_TITLE,
   description = SITE_DESCRIPTION,
-  image = '/thumbnail.png',
+  image = "/thumbnail.png",
   article = false,
   noindex = false,
 } = Astro.props;
@@ -26,67 +31,71 @@ const pageTitle = title === SITE_TITLE ? title : `${title} | ${SITE_TITLE}`;
 
 <!doctype html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="/icon.png" sizes="any" />
-  <link rel="apple-touch-icon" href="/icon.png" />
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/icon.png" sizes="any" />
+    <link rel="apple-touch-icon" href="/icon.png" />
 
-  <link rel="canonical" href={canonicalURL} />
-  {noindex && <meta name="robots" content="noindex,nofollow" />}
+    <link rel="canonical" href={canonicalURL} />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
 
-  <!-- Primary Meta Tags -->
-  <title>{pageTitle}</title>
-  <meta name="title" content={pageTitle} />
-  <meta name="description" content={description} />
-  <meta name="author" content="まろん" />
+    <!-- Primary Meta Tags -->
+    <title>{pageTitle}</title>
+    <meta name="title" content={pageTitle} />
+    <meta name="description" content={description} />
+    <meta name="author" content="まろん" />
 
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content={article ? 'article' : 'website'} />
-  <meta property="og:url" content={canonicalURL} />
-  <meta property="og:title" content={pageTitle} />
-  <meta property="og:description" content={description} />
-  <meta property="og:image" content={ogImage} />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content={pageTitle} />
-  <meta property="og:site_name" content={SITE_TITLE} />
-  <meta property="og:locale" content="ja_JP" />
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content={article ? "article" : "website"} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={pageTitle} />
+    <meta property="og:site_name" content={SITE_TITLE} />
+    <meta property="og:locale" content="ja_JP" />
 
-  <!-- Twitter / X Card -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:url" content={canonicalURL} />
-  <meta name="twitter:title" content={pageTitle} />
-  <meta name="twitter:description" content={description} />
-  <meta name="twitter:image" content={ogImage} />
-  <meta name="twitter:image:alt" content={pageTitle} />
-  <meta name="twitter:site" content={TWITTER_HANDLE} />
-  <meta name="twitter:creator" content={TWITTER_HANDLE} />
+    <!-- Twitter / X Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={canonicalURL} />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={pageTitle} />
+    <meta name="twitter:site" content={TWITTER_HANDLE} />
+    <meta name="twitter:creator" content={TWITTER_HANDLE} />
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
-    rel="stylesheet"
-  />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
 
-  <!-- Iconify web component (Material Symbols + all icon sets, no-JS fallback graceful) -->
-  <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js" is:inline></script>
+    <!-- Iconify web component (Material Symbols + all icon sets, no-JS fallback graceful) -->
+    <script
+      src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"
+      is:inline></script>
 
-  <!-- Prevent theme flash: apply stored / system theme before first paint -->
-  <script is:inline>
-    (function () {
-      var stored = localStorage.getItem('theme');
-      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      var theme = stored || (prefersDark ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-theme', theme);
-    })();
-  </script>
-</head>
-<body>
-  <slot />
-</body>
+    <!-- Prevent theme flash: apply stored / system theme before first paint -->
+    <script is:inline>
+      (function () {
+        var stored = localStorage.getItem("theme");
+        var prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)",
+        ).matches;
+        var theme = stored || (prefersDark ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
 </html>

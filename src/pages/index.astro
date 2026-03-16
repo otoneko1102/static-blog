@@ -1,17 +1,19 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import FormattedDate from '../components/FormattedDate.astro';
-import { getCollection } from 'astro:content';
-import { SITE_TITLE, SITE_DESCRIPTION, sortPosts } from '../consts';
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import FormattedDate from "../components/FormattedDate.astro";
+import { getCollection } from "astro:content";
+import { SITE_TITLE, SITE_DESCRIPTION, sortPosts } from "../consts";
 
 const allPosts = sortPosts(
-  (await getCollection('blog')).filter(p => !p.data.hidden)
+  (await getCollection("blog")).filter((p) => !p.data.hidden),
 );
 
 // Collect all tags
-const allTags = [...new Set(allPosts.flatMap(p => p.data.tags))].sort((a, b) => a.localeCompare(b, 'ja'));
+const allTags = [...new Set(allPosts.flatMap((p) => p.data.tags))].sort(
+  (a, b) => a.localeCompare(b, "ja"),
+);
 ---
 
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
@@ -19,13 +21,22 @@ const allTags = [...new Set(allPosts.flatMap(p => p.data.tags))].sort((a, b) => 
   <main class="container">
     <section style="padding: 2em 0;">
       <h1 class="page-heading" style="margin-top: 0;">
-        <iconify-icon icon="material-symbols:article-outline" width="28" height="28" aria-hidden="true"></iconify-icon>
+        <iconify-icon
+          icon="material-symbols:article-outline"
+          width="28"
+          height="28"
+          aria-hidden="true"></iconify-icon>
         記事一覧
       </h1>
 
       <!-- Search -->
       <div class="search-wrapper">
-        <iconify-icon icon="material-symbols:search" class="search-icon" width="18" height="18" aria-hidden="true"></iconify-icon>
+        <iconify-icon
+          icon="material-symbols:search"
+          class="search-icon"
+          width="18"
+          height="18"
+          aria-hidden="true"></iconify-icon>
         <input
           type="text"
           class="search-input"
@@ -37,82 +48,136 @@ const allTags = [...new Set(allPosts.flatMap(p => p.data.tags))].sort((a, b) => 
       </div>
 
       <!-- Tags filter -->
-      {allTags.length > 0 && (
-        <div class="sort-controls" id="tag-filters">
-          <button class="sort-btn active" data-tag="all">
-            <iconify-icon icon="material-symbols:filter-list" width="14" height="14" aria-hidden="true"></iconify-icon>
-            すべて
-          </button>
-          {allTags.map(tag => (
-            <button class="sort-btn" data-tag={tag}>#{tag}</button>
-          ))}
-        </div>
-      )}
+      {
+        allTags.length > 0 && (
+          <div class="sort-controls" id="tag-filters">
+            <button class="sort-btn active" data-tag="all">
+              <iconify-icon
+                icon="material-symbols:filter-list"
+                width="14"
+                height="14"
+                aria-hidden="true"
+              />
+              すべて
+            </button>
+            {allTags.map((tag) => (
+              <button class="sort-btn" data-tag={tag}>
+                #{tag}
+              </button>
+            ))}
+          </div>
+        )
+      }
 
       <!-- Sort controls -->
       <div class="sort-controls" id="sort-controls">
         <button class="sort-btn active" data-sort="date-desc">
-          <iconify-icon icon="material-symbols:arrow-downward" width="13" height="13" aria-hidden="true"></iconify-icon>
+          <iconify-icon
+            icon="material-symbols:arrow-downward"
+            width="13"
+            height="13"
+            aria-hidden="true"></iconify-icon>
           新しい順
         </button>
         <button class="sort-btn" data-sort="date-asc">
-          <iconify-icon icon="material-symbols:arrow-upward" width="13" height="13" aria-hidden="true"></iconify-icon>
+          <iconify-icon
+            icon="material-symbols:arrow-upward"
+            width="13"
+            height="13"
+            aria-hidden="true"></iconify-icon>
           古い順
         </button>
         <button class="sort-btn" data-sort="updated">
-          <iconify-icon icon="material-symbols:update" width="13" height="13" aria-hidden="true"></iconify-icon>
+          <iconify-icon
+            icon="material-symbols:update"
+            width="13"
+            height="13"
+            aria-hidden="true"></iconify-icon>
           更新日順
         </button>
         <button class="sort-btn" data-sort="title">
-          <iconify-icon icon="material-symbols:sort-by-alpha" width="13" height="13" aria-hidden="true"></iconify-icon>
+          <iconify-icon
+            icon="material-symbols:sort-by-alpha"
+            width="13"
+            height="13"
+            aria-hidden="true"></iconify-icon>
           名前順
         </button>
       </div>
 
       <!-- Article list -->
       <ul class="article-list" id="article-list">
-        {allPosts.map(post => (
-          <li
-            data-title={post.data.title.toLowerCase()}
-            data-tags={post.data.tags.join(',').toLowerCase()}
-            data-date={post.data.pubDate.getTime()}
-            data-updated={post.data.updatedDate?.getTime() || post.data.pubDate.getTime()}
-            data-pinned={post.data.pinned ? 'true' : 'false'}
-          >
-            <a href={`/blog/${post.id}`} class={`article-card ${post.data.pinned ? 'pinned' : ''}`}>
-              {post.data.pinned && (
-                <div class="pinned-badge">
-                  <iconify-icon icon="material-symbols:push-pin" width="12" height="12" aria-hidden="true"></iconify-icon>
-                  ピン止め
-                </div>
-              )}
-              <h2 class="card-title">{post.data.title}</h2>
-              <div class="card-meta">
-                <span class="meta-item">
-                  <iconify-icon icon="material-symbols:calendar-today-outline" width="13" height="13" aria-hidden="true"></iconify-icon>
-                  <FormattedDate date={post.data.pubDate} />
-                </span>
-                {post.data.updatedDate && (
-                  <span class="meta-item">
-                    <iconify-icon icon="material-symbols:update" width="13" height="13" aria-hidden="true"></iconify-icon>
-                    <FormattedDate date={post.data.updatedDate} />
-                  </span>
+        {
+          allPosts.map((post) => (
+            <li
+              data-title={post.data.title.toLowerCase()}
+              data-tags={post.data.tags.join(",").toLowerCase()}
+              data-date={post.data.pubDate.getTime()}
+              data-updated={
+                post.data.updatedDate?.getTime() || post.data.pubDate.getTime()
+              }
+              data-pinned={post.data.pinned ? "true" : "false"}
+            >
+              <a
+                href={`/blog/${post.id}`}
+                class={`article-card ${post.data.pinned ? "pinned" : ""}`}
+              >
+                {post.data.pinned && (
+                  <div class="pinned-badge">
+                    <iconify-icon
+                      icon="material-symbols:push-pin"
+                      width="12"
+                      height="12"
+                      aria-hidden="true"
+                    />
+                    ピン止め
+                  </div>
                 )}
-              </div>
-              {post.data.tags.length > 0 && (
-                <div class="card-tags">
-                  {post.data.tags.map(tag => (
-                    <span class="tag">#{tag}</span>
-                  ))}
+                <h2 class="card-title">{post.data.title}</h2>
+                <div class="card-meta">
+                  <span class="meta-item">
+                    <iconify-icon
+                      icon="material-symbols:calendar-today-outline"
+                      width="13"
+                      height="13"
+                      aria-hidden="true"
+                    />
+                    <FormattedDate date={post.data.pubDate} />
+                  </span>
+                  {post.data.updatedDate && (
+                    <span class="meta-item">
+                      <iconify-icon
+                        icon="material-symbols:update"
+                        width="13"
+                        height="13"
+                        aria-hidden="true"
+                      />
+                      <FormattedDate date={post.data.updatedDate} />
+                    </span>
+                  )}
                 </div>
-              )}
-            </a>
-          </li>
-        ))}
+                {post.data.tags.length > 0 && (
+                  <div class="card-tags">
+                    {post.data.tags.map((tag) => (
+                      <span class="tag">#{tag}</span>
+                    ))}
+                  </div>
+                )}
+              </a>
+            </li>
+          ))
+        }
       </ul>
 
-      <p id="no-results" style="display: none; text-align: center; color: var(--text-muted); padding: 2em;">
-        <iconify-icon icon="material-symbols:search-off" width="24" height="24" aria-hidden="true"></iconify-icon>
+      <p
+        id="no-results"
+        style="display: none; text-align: center; color: var(--text-muted); padding: 2em;"
+      >
+        <iconify-icon
+          icon="material-symbols:search-off"
+          width="24"
+          height="24"
+          aria-hidden="true"></iconify-icon>
         <br />検索結果がありません
       </p>
     </section>
@@ -120,77 +185,102 @@ const allTags = [...new Set(allPosts.flatMap(p => p.data.tags))].sort((a, b) => 
   <Footer />
 
   <script>
-    const searchInput = document.getElementById('search-input') as HTMLInputElement;
-    const articleList = document.getElementById('article-list')!;
-    const noResults = document.getElementById('no-results')!;
-    const items = Array.from(articleList.querySelectorAll('li'));
+    const searchInput = document.getElementById(
+      "search-input",
+    ) as HTMLInputElement;
+    const articleList = document.getElementById("article-list")!;
+    const noResults = document.getElementById("no-results")!;
+    const items = Array.from(articleList.querySelectorAll("li"));
 
     // Search
-    searchInput?.addEventListener('input', () => {
+    searchInput?.addEventListener("input", () => {
       filterAndSort();
     });
 
     // Tag filter
-    let activeTag = 'all';
-    document.getElementById('tag-filters')?.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest('.sort-btn') as HTMLButtonElement;
+    let activeTag = "all";
+    document.getElementById("tag-filters")?.addEventListener("click", (e) => {
+      const btn = (e.target as HTMLElement).closest(
+        ".sort-btn",
+      ) as HTMLButtonElement;
       if (!btn) return;
-      document.querySelectorAll('#tag-filters .sort-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeTag = btn.getAttribute('data-tag') || 'all';
+      document
+        .querySelectorAll("#tag-filters .sort-btn")
+        .forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeTag = btn.getAttribute("data-tag") || "all";
       filterAndSort();
     });
 
     // Sort
-    let activeSort = 'date-desc';
-    document.getElementById('sort-controls')?.addEventListener('click', (e) => {
-      const btn = (e.target as HTMLElement).closest('.sort-btn') as HTMLButtonElement;
+    let activeSort = "date-desc";
+    document.getElementById("sort-controls")?.addEventListener("click", (e) => {
+      const btn = (e.target as HTMLElement).closest(
+        ".sort-btn",
+      ) as HTMLButtonElement;
       if (!btn) return;
-      document.querySelectorAll('#sort-controls .sort-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeSort = btn.getAttribute('data-sort') || 'date-desc';
+      document
+        .querySelectorAll("#sort-controls .sort-btn")
+        .forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeSort = btn.getAttribute("data-sort") || "date-desc";
       filterAndSort();
     });
 
     function filterAndSort() {
-      const query = searchInput?.value.toLowerCase() || '';
+      const query = searchInput?.value.toLowerCase() || "";
 
       // Filter
-      let visible = items.filter(item => {
-        const title = item.getAttribute('data-title') || '';
-        const tags = item.getAttribute('data-tags') || '';
-        const matchesSearch = !query || title.includes(query) || tags.includes(query);
-        const matchesTag = activeTag === 'all' || tags.split(',').includes(activeTag.toLowerCase());
+      let visible = items.filter((item) => {
+        const title = item.getAttribute("data-title") || "";
+        const tags = item.getAttribute("data-tags") || "";
+        const matchesSearch =
+          !query || title.includes(query) || tags.includes(query);
+        const matchesTag =
+          activeTag === "all" ||
+          tags.split(",").includes(activeTag.toLowerCase());
         return matchesSearch && matchesTag;
       });
 
       // Sort
       visible.sort((a, b) => {
-        const aPinned = a.getAttribute('data-pinned') === 'true';
-        const bPinned = b.getAttribute('data-pinned') === 'true';
+        const aPinned = a.getAttribute("data-pinned") === "true";
+        const bPinned = b.getAttribute("data-pinned") === "true";
         if (aPinned && !bPinned) return -1;
         if (!aPinned && bPinned) return 1;
 
         switch (activeSort) {
-          case 'date-asc':
-            return Number(a.getAttribute('data-date')) - Number(b.getAttribute('data-date'));
-          case 'updated':
-            return Number(b.getAttribute('data-updated')) - Number(a.getAttribute('data-updated'));
-          case 'title':
-            return (a.getAttribute('data-title') || '').localeCompare(b.getAttribute('data-title') || '', 'ja');
+          case "date-asc":
+            return (
+              Number(a.getAttribute("data-date")) -
+              Number(b.getAttribute("data-date"))
+            );
+          case "updated":
+            return (
+              Number(b.getAttribute("data-updated")) -
+              Number(a.getAttribute("data-updated"))
+            );
+          case "title":
+            return (a.getAttribute("data-title") || "").localeCompare(
+              b.getAttribute("data-title") || "",
+              "ja",
+            );
           default: // date-desc
-            return Number(b.getAttribute('data-date')) - Number(a.getAttribute('data-date'));
+            return (
+              Number(b.getAttribute("data-date")) -
+              Number(a.getAttribute("data-date"))
+            );
         }
       });
 
       // Render
-      items.forEach(item => (item.style.display = 'none'));
-      visible.forEach(item => {
-        item.style.display = '';
+      items.forEach((item) => (item.style.display = "none"));
+      visible.forEach((item) => {
+        item.style.display = "";
         articleList.appendChild(item);
       });
 
-      noResults.style.display = visible.length === 0 ? '' : 'none';
+      noResults.style.display = visible.length === 0 ? "" : "none";
     }
   </script>
 </BaseLayout>

@@ -1,5 +1,5 @@
 ---
-import { SITE_TITLE } from '../consts';
+import { SITE_TITLE } from "../consts";
 ---
 
 <header class="site-header">
@@ -10,11 +10,19 @@ import { SITE_TITLE } from '../consts';
     </a>
     <nav class="header-nav">
       <a href="/about">
-        <iconify-icon icon="material-symbols:person-outline" width="16" height="16" aria-hidden="true"></iconify-icon>
+        <iconify-icon
+          icon="material-symbols:person-outline"
+          width="16"
+          height="16"
+          aria-hidden="true"></iconify-icon>
         About
       </a>
       <button class="theme-toggle" id="theme-toggle" aria-label="テーマ切替">
-        <iconify-icon id="theme-icon" icon="material-symbols:dark-mode-outline" width="20" height="20"></iconify-icon>
+        <iconify-icon
+          id="theme-icon"
+          icon="material-symbols:dark-mode-outline"
+          width="20"
+          height="20"></iconify-icon>
       </button>
     </nav>
   </div>
@@ -25,31 +33,31 @@ import { SITE_TITLE } from '../consts';
 </div>
 
 <script>
-  const toggle = document.getElementById('theme-toggle');
-  const icon = document.getElementById('theme-icon');
+  const toggle = document.getElementById("theme-toggle");
+  const icon = document.getElementById("theme-icon");
 
   function updateIcon() {
-    const theme = document.documentElement.getAttribute('data-theme');
+    const theme = document.documentElement.getAttribute("data-theme");
     if (icon) {
       icon.setAttribute(
-        'icon',
-        theme === 'dark'
-          ? 'material-symbols:light-mode-outline'
-          : 'material-symbols:dark-mode-outline'
+        "icon",
+        theme === "dark"
+          ? "material-symbols:light-mode-outline"
+          : "material-symbols:dark-mode-outline",
       );
     }
   }
 
   updateIcon();
 
-  toggle?.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
+  toggle?.addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme");
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
     updateIcon();
   });
 
   // Re-sync icon if theme was set before this script ran
-  document.addEventListener('DOMContentLoaded', updateIcon);
+  document.addEventListener("DOMContentLoaded", updateIcon);
 </script>

@@ -1,24 +1,55 @@
 ---
-import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL } from '../consts';
+import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL } from "../consts";
 ---
 
 <footer class="site-footer">
   <div class="container">
     <div class="footer-links">
-      <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" aria-label="GitHub">
-        <iconify-icon icon="simple-icons:github" width="16" height="16" aria-hidden="true"></iconify-icon>
+      <a
+        href={GITHUB_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="GitHub"
+      >
+        <iconify-icon
+          icon="simple-icons:github"
+          width="16"
+          height="16"
+          aria-hidden="true"></iconify-icon>
         GitHub
       </a>
-      <a href={`https://twitter.com/${TWITTER_HANDLE.replace('@', '')}`} target="_blank" rel="noopener noreferrer" aria-label="Twitter / X">
-        <iconify-icon icon="simple-icons:x" width="14" height="14" aria-hidden="true"></iconify-icon>
+      <a
+        href={`https://twitter.com/${TWITTER_HANDLE.replace("@", "")}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Twitter / X"
+      >
+        <iconify-icon
+          icon="simple-icons:x"
+          width="14"
+          height="14"
+          aria-hidden="true"></iconify-icon>
         Twitter
       </a>
-      <a href={PORTFOLIO_URL} target="_blank" rel="noopener noreferrer" aria-label="Portfolio">
-        <iconify-icon icon="material-symbols:person-outline" width="16" height="16" aria-hidden="true"></iconify-icon>
+      <a
+        href={PORTFOLIO_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Portfolio"
+      >
+        <iconify-icon
+          icon="material-symbols:person-outline"
+          width="16"
+          height="16"
+          aria-hidden="true"></iconify-icon>
         Portfolio
       </a>
       <a href="/rss.xml" aria-label="RSS フィード">
-        <iconify-icon icon="material-symbols:rss-feed" width="16" height="16" aria-hidden="true"></iconify-icon>
+        <iconify-icon
+          icon="material-symbols:rss-feed"
+          width="16"
+          height="16"
+          aria-hidden="true"></iconify-icon>
         RSS
       </a>
     </div>

@@ -89,14 +89,17 @@ async function main() {
       break;
     }
 
-    const description = (await question("description (任意、Enterでスキップ): ")).trim();
+    const description = (
+      await question("description (任意、Enterでスキップ): ")
+    ).trim();
 
     const nowStr = formatJstDate();
 
     const outFile = path.join(blogDir, `${id}.mdx`);
     const publicDir = path.join(publicFilesDir, id);
 
-    const content = `---\n` +
+    const content =
+      `---\n` +
       `title: "${title.replace(/"/g, '\\"')}"\n` +
       `description: "${description.replace(/"/g, '\\"')}"\n` +
       `pubDate: "${nowStr}"\n` +
