@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import readline from "readline";
 import { fileURLToPath } from "url";
+import { execSync } from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -115,6 +116,21 @@ async function main() {
     console.log("✅ 生成完了");
     console.log(`- 記事ファイル: ${outFile}`);
     console.log(`- 資料フォルダ: ${publicDir}`);
+
+    const createBranchAnswer = (await question("この記事用のブランチを作成してチェックアウトしますか？ (Y/n): ")).trim();
+    if (createBranchAnswer === "" || /^y(es)?$/i.test(createBranchAnswer)) {
+      try {
+        // Ensure we are in the repo root
+        const opts = { cwd: rootDir, stdio: "inherit" };
+        execSync(`git checkout -b article/${id}`, opts);
+        console.log(`✅ ブランチ作成&チェックアウト: article/${id}`);
+      } catch (err) {
+        console.error(
+          "⚠️ ブランチ作成/チェックアウトに失敗しました (すでに存在するか git リポジトリでない可能性があります):",
+          err.message ?? err,
+        );
+      }
+    }
   } catch (error) {
     console.error("エラーが発生しました:", error);
     process.exitCode = 1;
