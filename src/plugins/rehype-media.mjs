@@ -242,8 +242,34 @@ function buildYouTube(src, alt) {
 
 function buildTwitter(src) {
   return {
-    type: "raw",
-    value: `<div class="twitter-embed"><blockquote class="twitter-tweet" data-theme="dark"><a href="${src}">Tweet</a></blockquote></div>`,
+    type: "element",
+    tagName: "div",
+    properties: { className: ["twitter-embed"] },
+    children: [
+      {
+        type: "element",
+        tagName: "blockquote",
+        properties: { className: ["twitter-tweet"], dataTheme: "dark" },
+        children: [
+          {
+            type: "element",
+            tagName: "a",
+            properties: { href: src },
+            children: [{ type: "text", value: "Tweet" }],
+          },
+        ],
+      },
+      {
+        type: "element",
+        tagName: "script",
+        properties: {
+          async: true,
+          src: "https://platform.twitter.com/widgets.js",
+          charSet: "utf-8",
+        },
+        children: [],
+      },
+    ],
   };
 }
 

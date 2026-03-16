@@ -491,6 +491,89 @@ details[open] summary::before {
   color: var(--text-muted);
 }
 
+/* ===== Link Cards (OGP embeds) ===== */
+.link-card {
+  display: block;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 1.5em 0;
+  background: var(--bg-secondary);
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
+  color: inherit;
+}
+.link-card:hover {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  box-shadow: 0 2px 12px var(--shadow-md);
+  text-decoration: none;
+  color: inherit;
+}
+.link-card-body {
+  display: flex;
+  align-items: stretch;
+  min-height: 90px;
+}
+.link-card-text {
+  flex: 1;
+  padding: 0.85em 1.1em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  min-width: 0;
+  justify-content: center;
+}
+.link-card-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  line-height: 1.4;
+}
+.link-card-description {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  line-height: 1.5;
+}
+.link-card-sitename {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0;
+  margin-top: 0.25em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.link-card-image {
+  width: 140px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-left: 1px solid var(--border);
+  display: block;
+}
+.link-card-image--none {
+  width: 0;
+  border: none;
+}
+@media (max-width: 480px) {
+  .link-card-image {
+    width: 90px;
+  }
+}
+
 /* ===== Mermaid ===== */
 pre.mermaid {
   background: var(--bg-secondary) !important;

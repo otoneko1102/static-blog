@@ -11,6 +11,7 @@ import remarkGfm from "remark-gfm";
 
 import remarkDetails from "./src/plugins/remark-details.mjs";
 import remarkMermaid from "./src/plugins/remark-mermaid.mjs";
+import remarkLinkCard from "./src/plugins/remark-link-card.mjs";
 import remarkGithubAlerts from "./src/plugins/remark-github-alerts.mjs";
 import remarkBreaks from "remark-breaks";
 import remarkAutoLink from "./src/plugins/remark-auto-link.mjs";
@@ -56,6 +57,7 @@ export default defineConfig({
       remarkMermaid,
       remarkGithubAlerts,
       remarkAutoLink,
+      remarkLinkCard,
     ],
     rehypePlugins: [
       [rehypeKatex, { strict: false, throwOnError: false }],
