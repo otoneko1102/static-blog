@@ -9,10 +9,35 @@
  * og:site_name) and renders a rich link card embed.
  * Falls back gracefully when the URL is unreachable or returns no OGP data.
  */
+import fs from "fs";
+import path from "path";
 import { visit } from "unist-util-visit";
 
 // Build-time in-memory cache — avoids duplicate fetches within one build
 const ogpCache = new Map();
+
+// Your site origin (used to resolve local `/...` links to full URLs for OGP fetch).
+// We prefer the standard `SITE` env var (Astro sets this), but fall back to parsing
+// `astro.config.mjs` so we don't hardcode the value.
+function resolveSiteOrigin() {
+  const fromEnv =
+    (typeof process !== "undefined" && process.env.SITE) ||
+    (typeof import.meta !== "undefined" && import.meta.env?.SITE);
+  if (fromEnv) return fromEnv;
+
+  try {
+    const configPath = path.resolve(process.cwd(), "astro.config.mjs");
+    const configText = fs.readFileSync(configPath, "utf8");
+    const match = configText.match(/\bsite\s*:\s*["']([^"']+)["']/);
+    if (match) return match[1];
+  } catch {
+    // ignore
+  }
+
+  return "";
+}
+
+const SITE_ORIGIN = resolveSiteOrigin();
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -51,8 +76,7 @@ async function fetchOgp(url) {
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; LinkCard/1.0; +https://blog.montblank.fun)",
+        "User-Agent": "Mozilla/5.0 (compatible; LinkCard/1.0)",
         Accept: "text/html,application/xhtml+xml",
       },
     });
@@ -194,7 +218,10 @@ function isCardLine(line) {
     m[0].type === "text" &&
     m[0].value === "@" &&
     m[1].type === "link" &&
-    /^https?:\/\//.test(m[1].url)
+    (      // remote URLs or local site paths
+      /^https?:\/\//.test(m[1].url) ||
+      /^\//.test(m[1].url)
+    )
   );
 }
 
@@ -207,6 +234,13 @@ function getCardInfo(line) {
       .map((c) => c.value)
       .join("") || null;
   return { url: link.url, label };
+}
+
+function resolveUrlForOgp(url) {
+  if (/^\//.test(url)) {
+    return `${SITE_ORIGIN.replace(/\/$/, "")}${url}`;
+  }
+  return url;
 }
 
 // ── main plugin ──────────────────────────────────────────────────────────────
@@ -256,8 +290,14 @@ export default function remarkLinkCard() {
         for (const seg of segments) {
           if (seg.type === "card") {
             flushText();
-            console.log(`[link-card] Fetching OGP: ${seg.url}`);
-            const ogp = await fetchOgp(seg.url);
+            const isRemote = /^https?:\/\//.test(seg.url);
+            const isLocal = /^\//.test(seg.url);
+
+            const ogpUrl = isLocal ? resolveUrlForOgp(seg.url) : seg.url;
+            const shouldFetch = isRemote || (isLocal && SITE_ORIGIN);
+            const ogp = shouldFetch ? await fetchOgp(ogpUrl) : null;
+            if (shouldFetch) console.log(`[link-card] Fetching OGP: ${ogpUrl}`);
+
             replacements.push(buildCard(ogp, seg.url, seg.label));
           } else if (seg.hasContent) {
             textBuffer.push(seg.nodes);

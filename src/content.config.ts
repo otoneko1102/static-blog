@@ -11,12 +11,14 @@ import { z } from "astro/zod";
  *   "2026-03-15T00:00:00.000Z"  → parsed as-is (existing ISO content)
  *   Any other string      → passed to new Date() as a last resort
  */
-function toJstDate(val: unknown): Date {
+function toJstDate(val: unknown): Date | undefined {
   if (val instanceof Date) return val;
+  if (val == null) return undefined;
 
   if (val === null) return null;
   if (val === undefined) return undefined;
   const s = String(val).trim();
+  if (s === "" || s.toLowerCase() === "null" || s.toLowerCase() === "undefined") return undefined;
 
   // "YYYY-MM-DD" — date only, interpret as JST midnight
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
@@ -48,7 +50,7 @@ const blog = defineCollection({
     title: z.string(),
     description: z.string().default(""),
     pubDate: jstDate,
-    updatedDate: jstDate.optional(),
+    updatedDate: z.union([jstDate, z.null()]).optional(),
     tags: z.array(z.string()).default([]),
     pinned: z.boolean().default(false),
     heroImage: z.string().optional(),
