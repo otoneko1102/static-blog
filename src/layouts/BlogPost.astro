@@ -70,15 +70,6 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
   <Header />
   <main class="container">
     <article id="article-top">
-      <ArticleNav
-        prevPost={prevPost
-          ? { id: prevPost.id, title: prevPost.data.title }
-          : null}
-        nextPost={nextPost
-          ? { id: nextPost.id, title: nextPost.data.title }
-          : null}
-      />
-
       <header class="article-header">
         <h1 class="article-title">{title}</h1>
         <p class="article-description">{description}</p>
