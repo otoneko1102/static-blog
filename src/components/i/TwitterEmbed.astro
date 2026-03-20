@@ -1,0 +1,9 @@
+---
+const { url } = Astro.props;
+const replacedUrl = url.replace(/https?:\/\/x\.com\//, "https://twitter.com\/");
+---
+
+<blockquote class="twitter-tweet">
+  <a href={replacedUrl}></a>
+</blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
