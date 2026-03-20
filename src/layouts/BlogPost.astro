@@ -335,6 +335,19 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
     addCodeCopyButtons();
   </script>
 
+  <!-- Wrap tables in scroll containers for horizontal scroll on mobile -->
+  <script>
+    document
+      .querySelectorAll<HTMLElement>(".article-content table")
+      .forEach((table) => {
+        if (table.parentElement?.classList.contains("table-scroll")) return;
+        const wrapper = document.createElement("div");
+        wrapper.className = "table-scroll";
+        table.parentNode?.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+      });
+  </script>
+
   <!-- Twitter / X embed widget -->
   <script
     is:inline
