@@ -4,9 +4,9 @@ import { getCollection } from "astro:content";
 import { SITE_TITLE, SITE_DESCRIPTION, SITE_URL, sortPosts } from "../consts";
 
 export const GET: APIRoute = async (context) => {
-  const posts = sortPosts(
-    (await getCollection("blog")).filter((p) => !p.data.hidden),
-  );
+  const posts = (await getCollection("blog"))
+    .filter((p) => !p.data.hidden)
+    .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 
   return rss({
     title: SITE_TITLE,
