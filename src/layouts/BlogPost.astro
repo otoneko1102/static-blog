@@ -5,6 +5,7 @@ import Footer from "../components/Footer.astro";
 import ShareButtons from "../components/ShareButtons.astro";
 import ArticleNav from "../components/ArticleNav.astro";
 import FormattedDate from "../components/FormattedDate.astro";
+import TableOfContents from "../components/TableOfContents.astro";
 import { getCollection, render } from "astro:content";
 import { SITE_URL, sortPosts } from "../consts";
 
@@ -46,6 +47,18 @@ const articleUrl = `${SITE_URL}/blog/${id}`;
 const slotContent = await Astro.slots.render("default");
 const textLength = slotContent.replace(/<[^>]*>/g, "").length;
 const readingTime = Math.max(1, Math.ceil(textLength / 500));
+
+// Extract h1-h3 headings for table of contents
+const headingRegex = /<h([1-3])([^>]*)>([\s\S]*?)<\/h[1-3]>/gi;
+const headings: { level: number; id: string; text: string }[] = [];
+let headingMatch: RegExpExecArray | null;
+while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
+  const [, level, attrs, rawHtml] = headingMatch;
+  const idMatch = attrs.match(/\bid="([^"]*)"/);
+  if (!idMatch) continue;
+  const text = rawHtml.replace(/<[^>]*>/g, "").trim();
+  headings.push({ level: parseInt(level), id: idMatch[1], text });
+}
 ---
 
 <BaseLayout
@@ -56,7 +69,16 @@ const readingTime = Math.max(1, Math.ceil(textLength / 500));
 >
   <Header />
   <main class="container">
-    <article>
+    <article id="article-top">
+      <ArticleNav
+        prevPost={prevPost
+          ? { id: prevPost.id, title: prevPost.data.title }
+          : null}
+        nextPost={nextPost
+          ? { id: nextPost.id, title: nextPost.data.title }
+          : null}
+      />
+
       <header class="article-header">
         <h1 class="article-title">{title}</h1>
         <p class="article-description">{description}</p>
@@ -121,6 +143,74 @@ const readingTime = Math.max(1, Math.ceil(textLength / 500));
     </article>
   </main>
   <Footer />
+
+  <!-- Fixed TOC (sidebar on desktop, overlay on mobile) -->
+  <TableOfContents title={title} headings={headings} />
+
+  <!-- Fixed page action buttons: TOC toggle (mobile) + scroll top/bottom -->
+  <div class="page-actions">
+    <button
+      class="action-btn action-toc-btn"
+      id="action-toc-btn"
+      aria-label="目次"
+      title="目次"
+      aria-expanded="false"
+    >
+      <iconify-icon
+        icon="material-symbols:format-list-bulleted"
+        width="20"
+        height="20"
+      />
+    </button>
+    <button
+      class="action-btn"
+      id="action-top-btn"
+      aria-label="ページトップへ"
+      title="ページトップへ"
+    >
+      <iconify-icon
+        icon="material-symbols:arrow-upward"
+        width="20"
+        height="20"
+      />
+    </button>
+    <button
+      class="action-btn"
+      id="action-bottom-btn"
+      aria-label="ページボトムへ"
+      title="ページボトムへ"
+    >
+      <iconify-icon
+        icon="material-symbols:arrow-downward"
+        width="20"
+        height="20"
+      />
+    </button>
+  </div>
+
+  <!-- Page action button scripts -->
+  <script>
+    const tocBtn = document.getElementById("action-toc-btn");
+    tocBtn?.addEventListener("click", () => {
+      const expanded = tocBtn.getAttribute("aria-expanded") === "true";
+      if (expanded) {
+        window.dispatchEvent(new Event("toc:close"));
+        tocBtn.setAttribute("aria-expanded", "false");
+      } else {
+        window.dispatchEvent(new Event("toc:open"));
+        tocBtn.setAttribute("aria-expanded", "true");
+      }
+    });
+
+    document.getElementById("action-top-btn")?.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    document
+      .getElementById("action-bottom-btn")
+      ?.addEventListener("click", () => {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      });
+  </script>
 
   <!-- KaTeX fallback: render plain-text delimiters that were not converted at build time -->
   <script>

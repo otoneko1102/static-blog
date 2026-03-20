@@ -45,6 +45,25 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/** Decode common HTML entities that appear in meta tag content attributes. */
+function decodeHtmlEntities(str) {
+  if (!str) return str;
+  return str
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#(\d+);/g, (_, code) =>
+      String.fromCharCode(parseInt(code, 10)),
+    )
+    .replace(/&#x([0-9a-fA-F]+);/gi, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16)),
+    )
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ");
+}
+
 /** Extract a single <meta> content value by property or name. */
 function getMeta(html, ...properties) {
   for (const prop of properties) {
@@ -111,7 +130,12 @@ async function fetchOgp(url) {
         }
       })();
 
-    result = { title, description, image, siteName };
+    result = {
+      title: decodeHtmlEntities(title),
+      description: decodeHtmlEntities(description),
+      image,
+      siteName: decodeHtmlEntities(siteName),
+    };
   } catch {
     result = null;
   }
