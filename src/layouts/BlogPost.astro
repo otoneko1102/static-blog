@@ -150,8 +150,7 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
       <iconify-icon
         icon="material-symbols:format-list-bulleted"
         width="20"
-        height="20"
-      />
+        height="20"></iconify-icon>
     </button>
     <button
       class="action-btn"
@@ -159,11 +158,8 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
       aria-label="ページトップへ"
       title="ページトップへ"
     >
-      <iconify-icon
-        icon="material-symbols:arrow-upward"
-        width="20"
-        height="20"
-      />
+      <iconify-icon icon="material-symbols:arrow-upward" width="20" height="20"
+      ></iconify-icon>
     </button>
     <button
       class="action-btn"
@@ -174,8 +170,7 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
       <iconify-icon
         icon="material-symbols:arrow-downward"
         width="20"
-        height="20"
-      />
+        height="20"></iconify-icon>
     </button>
   </div>
 
@@ -199,7 +194,10 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
     document
       .getElementById("action-bottom-btn")
       ?.addEventListener("click", () => {
-        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: "smooth",
+        });
       });
   </script>
 
