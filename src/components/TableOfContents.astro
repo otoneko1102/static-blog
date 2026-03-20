@@ -1,0 +1,140 @@
+---
+interface Props {
+  title: string;
+  headings: { level: number; id: string; text: string }[];
+}
+
+const { title, headings } = Astro.props;
+const minLevel = headings.length > 0 ? Math.min(...headings.map((h) => h.level)) : 1;
+---
+
+<nav class="toc" id="toc-panel" aria-label="目次">
+  <div class="toc-header" id="toc-header" role="button" tabindex="0" aria-label="目次を折りたたむ">
+    <span class="toc-title">
+      <iconify-icon
+        icon="material-symbols:format-list-bulleted"
+        width="14"
+        height="14"
+        aria-hidden="true"
+      />
+      目次
+    </span>
+    <span class="toc-collapse-btn" aria-hidden="true">
+      <iconify-icon
+        icon="material-symbols:keyboard-arrow-up"
+        width="18"
+        height="18"
+      />
+    </span>
+  </div>
+  <div class="toc-body">
+    <ul>
+      <li>
+        <a href="#article-top" class="toc-link toc-link--title">{title}</a>
+      </li>
+      {
+        headings.map((h) => (
+          <li style={`padding-left: ${(h.level - minLevel + 1) * 1.1}em`}>
+            <a href={`#${h.id}`} class="toc-link">
+              {h.text}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</nav>
+
+<script>
+  const tocPanel = document.getElementById("toc-panel") as HTMLElement | null;
+  const tocHeader = document.getElementById("toc-header");
+
+  // Restore collapse state (persisted across visits)
+  if (localStorage.getItem("toc-collapsed") === "true") {
+    tocPanel?.classList.add("toc--collapsed");
+  }
+
+  // Whole header row is the click target for collapse/expand
+  function toggleCollapse() {
+    const collapsed = tocPanel?.classList.toggle("toc--collapsed");
+    localStorage.setItem("toc-collapsed", collapsed ? "true" : "false");
+  }
+  tocHeader?.addEventListener("click", toggleCollapse);
+  tocHeader?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggleCollapse();
+    }
+  });
+
+  // Adjust TOC top to stay below the site banner (banner scrolls away naturally)
+  function adjustTocTop() {
+    const header = document.querySelector(".site-header") as HTMLElement | null;
+    const banner = document.querySelector(".site-banner") as HTMLElement | null;
+    if (!tocPanel || !header) return;
+    const headerH = header.offsetHeight;
+    const gap = 10;
+    const bannerBottom = banner ? banner.getBoundingClientRect().bottom : 0;
+    tocPanel.style.top =
+      (bannerBottom > headerH ? bannerBottom + gap : headerH + gap) + "px";
+  }
+  adjustTocTop();
+  window.addEventListener("scroll", adjustTocTop, { passive: true });
+
+  // Mobile open / close via custom events dispatched by BlogPost
+  window.addEventListener("toc:open", () => {
+    tocPanel?.classList.add("toc--open");
+  });
+  window.addEventListener("toc:close", () => {
+    tocPanel?.classList.remove("toc--open");
+  });
+
+  // Close when clicking outside (mobile)
+  document.addEventListener("click", (e) => {
+    const target = e.target as Element;
+    if (
+      !target.closest("#toc-panel") &&
+      !target.closest("#action-toc-btn")
+    ) {
+      if (tocPanel?.classList.contains("toc--open")) {
+        tocPanel.classList.remove("toc--open");
+        document
+          .getElementById("action-toc-btn")
+          ?.setAttribute("aria-expanded", "false");
+      }
+    }
+  });
+
+  // Active heading highlight
+  const links =
+    tocPanel?.querySelectorAll<HTMLAnchorElement>("a.toc-link");
+  if (links?.length) {
+    const headingMap = new Map<Element, HTMLAnchorElement>();
+    links.forEach((a) => {
+      const hash = a.getAttribute("href") ?? "";
+      const id = hash.startsWith("#") ? hash.slice(1) : "";
+      const el = document.getElementById(id);
+      if (el) headingMap.set(el, a);
+    });
+
+    let activeLink: HTMLAnchorElement | null = null;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            activeLink?.classList.remove("toc-active");
+            const link = headingMap.get(entry.target);
+            if (link) {
+              activeLink = link;
+              activeLink.classList.add("toc-active");
+            }
+          }
+        }
+      },
+      { rootMargin: "-64px 0px -55% 0px", threshold: 0 },
+    );
+
+    headingMap.forEach((_, el) => io.observe(el));
+  }
+</script>
