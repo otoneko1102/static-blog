@@ -872,6 +872,14 @@ main.container > section:first-child {
   color: var(--text-primary);
   line-height: 1.4;
 }
+.article-card .card-description {
+  font-style: italic;
+  font-size: 0.85rem;
+  font-weight: 100;
+  margin: 0 0 1em;
+  color: var(--text-secondary);
+  line-height: 1;
+}
 .article-card .card-meta {
   display: flex;
   align-items: center;
@@ -918,6 +926,15 @@ main.container > section:first-child {
   font-weight: 800;
   margin: 0 0 0.8em;
   line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+.article-header .article-description {
+  font-style: italic;
+  font-size: 1rem;
+  font-weight: 100;
+  color: var(--text-secondary);
+  margin: 0 0 0.8em;
+  line-height: 1;
   letter-spacing: -0.02em;
 }
 .article-meta {
@@ -1228,6 +1245,9 @@ main.container > section:first-child {
   .article-header .article-title {
     font-size: 1.4rem;
   }
+  .article-header .article-description {
+    font-size: 0.8rem;
+  }
   .article-nav {
     grid-template-columns: 1fr;
   }
@@ -1251,6 +1271,9 @@ main.container > section:first-child {
   }
   .article-header .article-title {
     font-size: 1.25rem;
+  }
+  .article-header .article-description {
+    font-size: 0.9rem;
   }
   .article-nav {
     gap: 0.75em;

@@ -137,6 +137,7 @@ const allTags = [...new Set(allPosts.flatMap((p) => p.data.tags))].sort(
                   </div>
                 )}
                 <h2 class="card-title">{post.data.title}</h2>
+                <p class="card-description">{post.data.description}</p>
                 <div class="card-meta">
                   <span class="meta-item">
                     <iconify-icon
