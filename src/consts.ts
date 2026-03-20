@@ -1,6 +1,6 @@
-export const SITE_TITLE = "まろんのブログ";
+export const SITE_TITLE = "まろんのブログ｡";
 export const SITE_DESCRIPTION =
-  "まろんの個人ブログ。技術、イベント、LTなどについて書いています。";
+  "個人ブログです。技術、イベント、LT、趣味などについて書いています。";
 export const SITE_URL = "https://blog.montblank.fun";
 export const TWITTER_HANDLE = "@rin_montblank";
 export const GITHUB_URL = "https://github.com/otoneko1102";
