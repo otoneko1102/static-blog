@@ -13,9 +13,13 @@ const allPosts: BlogPost[] = sortPosts(
   (await getCollection("blog")).filter((p) => !p.data.hidden),
 );
 
-// Collect all tags
+// Collect all tags with per-tag article counts
 const allTags = [...new Set(allPosts.flatMap((p) => p.data.tags))].sort(
   (a, b) => a.localeCompare(b, "ja"),
+);
+const tagCounts = new Map<string, number>();
+allPosts.forEach((p) =>
+  p.data.tags.forEach((t) => tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1)),
 );
 ---
 
@@ -50,24 +54,56 @@ const allTags = [...new Set(allPosts.flatMap((p) => p.data.tags))].sort(
         />
       </div>
 
-      <!-- Tags filter -->
+      <!-- Tags filter (collapsible) -->
       {
         allTags.length > 0 && (
-          <div class="sort-controls" id="tag-filters">
-            <button class="sort-btn active" data-tag="all">
+          <div class="tag-filter-wrapper">
+            <button
+              class="tag-filter-toggle"
+              id="tag-filter-toggle"
+              aria-expanded="false"
+              aria-controls="tag-filter-panel"
+            >
               <iconify-icon
-                icon="material-symbols:filter-list"
+                icon="material-symbols:label-outline"
                 width="14"
                 height="14"
                 aria-hidden="true"
               />
-              すべて
+              タグで絞り込む
+              <span class="tag-filter-badge" id="tag-filter-badge">
+                {allTags.length}個
+              </span>
+              <iconify-icon
+                icon="material-symbols:keyboard-arrow-down"
+                width="16"
+                height="16"
+                class="tag-filter-arrow"
+                aria-hidden="true"
+              />
             </button>
-            {allTags.map((tag) => (
-              <button class="sort-btn" data-tag={tag}>
-                #{tag}
-              </button>
-            ))}
+            <div class="tag-filter-panel" id="tag-filter-panel" hidden>
+              <div class="tag-chip-grid" id="tag-filters">
+                <button class="tag-chip tag-chip--all active" data-tag="all">
+                  <iconify-icon
+                    icon="material-symbols:apps"
+                    width="13"
+                    height="13"
+                    aria-hidden="true"
+                  />
+                  すべて
+                  <span class="tag-chip-count">{allPosts.length}</span>
+                </button>
+                {allTags.map((tag) => (
+                  <button class="tag-chip" data-tag={tag}>
+                    #{tag}
+                    <span class="tag-chip-count">
+                      {tagCounts.get(tag) ?? 0}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )
       }
@@ -121,8 +157,7 @@ const allTags = [...new Set(allPosts.flatMap((p) => p.data.tags))].sort(
               }
               data-pinned={post.data.pinned ? "true" : "false"}
             >
-              <a
-                href={`/blog/${post.id}`}
+              <article
                 class={`article-card ${post.data.pinned ? "pinned" : ""}`}
               >
                 {post.data.pinned && (
@@ -136,7 +171,11 @@ const allTags = [...new Set(allPosts.flatMap((p) => p.data.tags))].sort(
                     ピン止め
                   </div>
                 )}
-                <h2 class="card-title">{post.data.title}</h2>
+                <h2 class="card-title">
+                  <a href={`/blog/${post.id}`} class="card-link">
+                    {post.data.title}
+                  </a>
+                </h2>
                 <p class="card-description">{post.data.description}</p>
                 <div class="card-meta">
                   <span class="meta-item">
@@ -165,11 +204,13 @@ const allTags = [...new Set(allPosts.flatMap((p) => p.data.tags))].sort(
                     {[...post.data.tags]
                       .sort((a, b) => a.localeCompare(b, "ja"))
                       .map((tag) => (
-                        <span class="tag">#{tag}</span>
+                        <a href={`/tag/${tag}`} class="tag card-tag">
+                          #{tag}
+                        </a>
                       ))}
                   </div>
                 )}
-              </a>
+              </article>
             </li>
           ))
         }
@@ -203,18 +244,46 @@ const allTags = [...new Set(allPosts.flatMap((p) => p.data.tags))].sort(
       filterAndSort();
     });
 
+    // Tag filter panel toggle
+    const tagToggle = document.getElementById(
+      "tag-filter-toggle",
+    ) as HTMLButtonElement | null;
+    const tagPanel = document.getElementById("tag-filter-panel");
+    const tagBadge = document.getElementById("tag-filter-badge");
+
+    tagToggle?.addEventListener("click", () => {
+      const expanded = tagToggle.getAttribute("aria-expanded") === "true";
+      tagToggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+      if (expanded) {
+        tagPanel?.setAttribute("hidden", "");
+      } else {
+        tagPanel?.removeAttribute("hidden");
+      }
+    });
+
     // Tag filter
+    const totalTagCount = document.querySelectorAll(
+      "#tag-filters [data-tag]:not([data-tag='all'])",
+    ).length;
     let activeTag = "all";
     document.getElementById("tag-filters")?.addEventListener("click", (e) => {
       const btn = (e.target as HTMLElement).closest(
-        ".sort-btn",
+        "[data-tag]",
       ) as HTMLButtonElement;
       if (!btn) return;
       document
-        .querySelectorAll("#tag-filters .sort-btn")
+        .querySelectorAll("#tag-filters [data-tag]")
         .forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       activeTag = btn.getAttribute("data-tag") || "all";
+      // Update badge: show selected tag or total count
+      if (tagBadge) {
+        tagBadge.textContent =
+          activeTag === "all" ? `${totalTagCount}個` : `#${activeTag}`;
+      }
+      if (tagToggle) {
+        tagToggle.classList.toggle("has-filter", activeTag !== "all");
+      }
       filterAndSort();
     });
 

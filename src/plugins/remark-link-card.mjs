@@ -54,9 +54,7 @@ function decodeHtmlEntities(str) {
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#x27;/gi, "'")
-    .replace(/&#(\d+);/g, (_, code) =>
-      String.fromCharCode(parseInt(code, 10)),
-    )
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
     .replace(/&#x([0-9a-fA-F]+);/gi, (_, hex) =>
       String.fromCharCode(parseInt(hex, 16)),
     )

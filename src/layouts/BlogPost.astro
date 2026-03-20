@@ -70,15 +70,6 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
   <Header />
   <main class="container">
     <article id="article-top">
-      <ArticleNav
-        prevPost={prevPost
-          ? { id: prevPost.id, title: prevPost.data.title }
-          : null}
-        nextPost={nextPost
-          ? { id: nextPost.id, title: nextPost.data.title }
-          : null}
-      />
-
       <header class="article-header">
         <h1 class="article-title">{title}</h1>
         <p class="article-description">{description}</p>
@@ -159,8 +150,7 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
       <iconify-icon
         icon="material-symbols:format-list-bulleted"
         width="20"
-        height="20"
-      />
+        height="20"></iconify-icon>
     </button>
     <button
       class="action-btn"
@@ -168,11 +158,8 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
       aria-label="ページトップへ"
       title="ページトップへ"
     >
-      <iconify-icon
-        icon="material-symbols:arrow-upward"
-        width="20"
-        height="20"
-      />
+      <iconify-icon icon="material-symbols:arrow-upward" width="20" height="20"
+      ></iconify-icon>
     </button>
     <button
       class="action-btn"
@@ -183,8 +170,7 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
       <iconify-icon
         icon="material-symbols:arrow-downward"
         width="20"
-        height="20"
-      />
+        height="20"></iconify-icon>
     </button>
   </div>
 
@@ -208,7 +194,10 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
     document
       .getElementById("action-bottom-btn")
       ?.addEventListener("click", () => {
-        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: "smooth",
+        });
       });
   </script>
 
@@ -333,6 +322,19 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
     }
 
     addCodeCopyButtons();
+  </script>
+
+  <!-- Wrap tables in scroll containers for horizontal scroll on mobile -->
+  <script>
+    document
+      .querySelectorAll<HTMLElement>(".article-content table")
+      .forEach((table) => {
+        if (table.parentElement?.classList.contains("table-scroll")) return;
+        const wrapper = document.createElement("div");
+        wrapper.className = "table-scroll";
+        table.parentNode?.insertBefore(wrapper, table);
+        wrapper.appendChild(table);
+      });
   </script>
 
   <!-- Twitter / X embed widget -->
