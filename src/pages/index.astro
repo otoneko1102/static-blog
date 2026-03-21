@@ -6,6 +6,7 @@ import FormattedDate from "../components/FormattedDate.astro";
 import type { CollectionEntry } from "astro:content";
 import { getCollection } from "astro:content";
 import { SITE_TITLE, SITE_DESCRIPTION, sortPosts } from "../consts";
+import AboutSidebar from "../components/AboutSidebar.astro";
 
 type BlogPost = CollectionEntry<"blog">;
 
@@ -25,6 +26,7 @@ allPosts.forEach((p) =>
 
 <BaseLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <Header />
+  <AboutSidebar />
   <main class="container">
     <section style="padding: 2em 0;">
       <h1 class="page-heading" style="margin-top: 0;">

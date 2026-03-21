@@ -97,5 +97,59 @@ const pageTitle = title === SITE_TITLE ? title : `${title} | ${SITE_TITLE}`;
   </head>
   <body>
     <slot />
+
+    <!-- Fixed page action buttons (all pages) -->
+    <div class="page-actions">
+      <button
+        class="action-btn action-toc-btn"
+        id="action-toc-btn"
+        aria-label="目次"
+        title="目次"
+        aria-expanded="false"
+      >
+        <iconify-icon
+          icon="material-symbols:format-list-bulleted"
+          width="20"
+          height="20"></iconify-icon>
+      </button>
+      <button
+        class="action-btn"
+        id="action-top-btn"
+        aria-label="ページトップへ"
+        title="ページトップへ"
+      >
+        <iconify-icon
+          icon="material-symbols:arrow-upward"
+          width="20"
+          height="20"></iconify-icon>
+      </button>
+      <button
+        class="action-btn"
+        id="action-bottom-btn"
+        aria-label="ページボトムへ"
+        title="ページボトムへ"
+      >
+        <iconify-icon
+          icon="material-symbols:arrow-downward"
+          width="20"
+          height="20"></iconify-icon>
+      </button>
+    </div>
+
+    <script>
+      document
+        .getElementById("action-top-btn")
+        ?.addEventListener("click", () => {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      document
+        .getElementById("action-bottom-btn")
+        ?.addEventListener("click", () => {
+          window.scrollTo({
+            top: document.body.scrollHeight,
+            behavior: "smooth",
+          });
+        });
+    </script>
   </body>
 </html>

@@ -78,7 +78,7 @@ const minLevel =
     const banner = document.querySelector(".site-banner") as HTMLElement | null;
     if (!tocPanel || !header) return;
     const headerH = header.offsetHeight;
-    const gap = 10;
+    const gap = 28;
     const bannerBottom = banner ? banner.getBoundingClientRect().bottom : 0;
     tocPanel.style.top =
       (bannerBottom > headerH ? bannerBottom + gap : headerH + gap) + "px";

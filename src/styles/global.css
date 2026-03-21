@@ -716,8 +716,6 @@ pre.mermaid {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 820px;
-  margin: 0 auto;
   padding: 0 1.5em;
 }
 .site-logo {
@@ -735,8 +733,8 @@ pre.mermaid {
   color: var(--accent);
 }
 .site-logo img {
-  width: 28px;
-  height: 28px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   margin: 0;
 }
@@ -1130,8 +1128,8 @@ main.container > section:first-child {
 /* Desktop: fixed sidebar in the right gutter (top overridden by JS) */
 @media (min-width: 1280px) {
   .toc {
-    right: max(1rem, calc((100vw - 820px) / 2 - 268px));
-    width: min(248px, calc((100vw - 820px) / 2 - 1.5rem));
+    right: 1rem;
+    width: calc((100vw - 820px) / 2 - 2rem);
     max-height: calc(100vh - 6rem);
     opacity: 1;
     pointer-events: auto;
@@ -1262,12 +1260,15 @@ main.container > section:first-child {
   color: var(--accent);
   border-color: var(--accent);
 }
-/* TOC toggle button: only visible below the sidebar breakpoint */
+/* TOC toggle button: hidden by default; shown on article pages (mobile only) */
 .action-toc-btn {
+  display: none;
+}
+.action-toc-btn.enabled {
   display: flex;
 }
 @media (min-width: 1280px) {
-  .action-toc-btn {
+  .action-toc-btn.enabled {
     display: none;
   }
 }
