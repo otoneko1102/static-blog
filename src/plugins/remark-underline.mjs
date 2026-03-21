@@ -177,6 +177,107 @@ export default function remarkUnderline() {
       if (changed) node.children = out;
     });
 
+    // ── Pass 3.5: fix wrongly-paired ** / ~~ (CJK flanking rule mismatch) ──
+    // When ** or ~~ is adjacent to CJK punctuation like 「」, CommonMark
+    // flanking rules can pair the WRONG delimiters.  For example:
+    //   **「text1」**plaintext**「text2」**
+    // The closing ** after 「text1」 is NOT right-flanking (preceded by 」
+    // punctuation, followed by a letter), so it cannot close.  The ** before
+    // 「text2」 IS right-flanking (preceded by a letter), so it unexpectedly
+    // closes the opening ** that was meant to open 「text1」, producing:
+    //   text("**「text1」") + strong("plaintext") + text("「text2」**…")
+    // This pass detects the pattern:
+    //   text("prefix<delim>content1") + wrongNode + text("content2<delim>suffix")
+    // and reconstructs it as:
+    //   text("prefix") + wrappedNode(content1) + text("wrongInner") + wrappedNode(content2) + text("suffix")
+    // Handles: ** → strong, ~~ → del
+    const MISPAIR_PATTERNS = [
+      {
+        nodeType: "strong",
+        openRe:  /^([\s\S]*)\*\*([^*\n]+)$/,
+        closeRe: /^([^*\n]+?)\*\*([\s\S]*)$/,
+        tag: "strong",
+        skip: (s) => s.data?.hName === "u",  // skip underline nodes
+      },
+      {
+        nodeType: "delete",
+        openRe:  /^([\s\S]*)~~([^~\n]+)$/,
+        closeRe: /^([^~\n]+?)~~([\s\S]*)$/,
+        tag: "del",
+        skip: () => false,
+      },
+      {
+        // Single * italic — must not match ** (bold) delimiters.
+        // openRe: last single * (not preceded or followed by another *)
+        // closeRe: first single * (not preceded or followed by another *)
+        nodeType: "emphasis",
+        openRe:  /^([\s\S]*)(?<!\*)\*(?!\*)([^*\n]+)$/,
+        closeRe: /^([^*\n]+?)(?<!\*)\*(?!\*)([\s\S]*)$/,
+        tag: "em",
+        skip: () => false,
+      },
+      {
+        // Single _ italic (remark-gfm emphasis via _)
+        nodeType: "emphasis",
+        openRe:  /^([\s\S]*)(?<!_)_(?!_)([^_\n]+)$/,
+        closeRe: /^([^_\n]+?)(?<!_)_(?!_)([\s\S]*)$/,
+        tag: "em",
+        skip: () => false,
+      },
+    ];
+
+    for (const { nodeType, openRe, closeRe, tag, skip } of MISPAIR_PATTERNS) {
+      visit(tree, (node) => {
+        if (!BLOCK_TYPES.has(node.type) || !Array.isArray(node.children)) return;
+
+        const kids = node.children;
+        let i = 0;
+        while (i + 2 < kids.length) {
+          const t1 = kids[i];
+          const s  = kids[i + 1];
+          const t2 = kids[i + 2];
+
+          if (
+            t1.type !== "text" ||
+            s.type  !== nodeType ||
+            t2.type !== "text" ||
+            skip(s)
+          ) {
+            i++;
+            continue;
+          }
+
+          // t1 must end with <delim>content  (the delimiter was an intended opener)
+          const openMatch = t1.value.match(openRe);
+          // t2 must start with content<delim>  (the delimiter was an intended closer)
+          const closeMatch = t2.value.match(closeRe);
+
+          if (!openMatch || !closeMatch) { i++; continue; }
+
+          const [, beforeOpen, openContent]  = openMatch;
+          const [, closeContent, afterClose] = closeMatch;
+
+          // The wrongly-marked span becomes plain (un-marked) HTML
+          const wrongHtml = (s.children ?? []).map(serializeInline).join("");
+
+          const esc = (str) =>
+            str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+          const replacement = [];
+          if (beforeOpen)  replacement.push({ type: "text", value: beforeOpen });
+          replacement.push({ type: "html", value: `<${tag}>${esc(openContent)}</${tag}>` });
+          if (wrongHtml)   replacement.push({ type: "html", value: wrongHtml });
+          replacement.push({ type: "html", value: `<${tag}>${esc(closeContent)}</${tag}>` });
+          if (afterClose)  replacement.push({ type: "text", value: afterClose });
+
+          kids.splice(i, 3, ...replacement);
+          // Don't advance i: re-check from the same position for chained patterns.
+          // The new node at kids[i] won't re-trigger (text without trailing delimiter,
+          // or an html node) so the loop will naturally increment i next iteration.
+        }
+      });
+    }
+
     // ── Pass 4: inline markers left as literal text ──────────────────────
     // CommonMark flanking rules prevent ** / ~~ from opening/closing when
     // the delimiter is adjacent to Unicode punctuation on one side and an
