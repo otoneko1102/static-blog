@@ -82,8 +82,13 @@ function serializeNode(node) {
     case "image": {
       const src = (node.url ?? "").replace(/"/g, "&quot;");
       const alt = (node.alt ?? "").replace(/"/g, "&quot;");
-      return `<img src="${src}" alt="${alt}" />`;
+      const title = node.title
+        ? ` title="${node.title.replace(/"/g, "&quot;")}"`
+        : "";
+      return `<img src="${src}" alt="${alt}"${title} />`;
     }
+    case "break":
+      return "<br>";
 
     case "paragraph": {
       const inner = (node.children ?? []).map(serializeNode).join("");

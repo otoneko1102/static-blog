@@ -1,0 +1,225 @@
+---
+import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL } from "../consts";
+---
+
+<aside class="about-sidebar" id="about-sidebar" aria-label="プロフィール">
+  <div class="about-sidebar-avatar-wrap">
+    <img
+      src="/icon.png"
+      alt="まろん｡"
+      class="about-sidebar-avatar"
+      width="72"
+      height="72"
+    />
+  </div>
+
+  <div class="about-sidebar-name">まろん｡</div>
+  <div class="about-sidebar-bio">技術とドメインの話が好きな変な人</div>
+
+  <div class="about-sidebar-links">
+    <a href={PORTFOLIO_URL} target="_blank" rel="noopener noreferrer">
+      <iconify-icon
+        icon="material-symbols:language"
+        width="14"
+        height="14"
+        aria-hidden="true"></iconify-icon>
+      ポートフォリオ
+    </a>
+    <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+      <iconify-icon
+        icon="simple-icons:github"
+        width="13"
+        height="13"
+        aria-hidden="true"></iconify-icon>
+      GitHub
+    </a>
+    <a
+      href={`https://twitter.com/${TWITTER_HANDLE.replace("@", "")}`}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      <iconify-icon
+        icon="simple-icons:twitter"
+        width="13"
+        height="13"
+        aria-hidden="true"></iconify-icon>
+      Twitter
+    </a>
+  </div>
+
+  <div class="about-sidebar-section">
+    <div class="about-sidebar-section-title">
+      <iconify-icon
+        icon="material-symbols:info-outline"
+        width="13"
+        height="13"
+        aria-hidden="true"></iconify-icon>
+      このブログについて
+    </div>
+    <p class="about-sidebar-section-body">
+      Astro + MDX + JS Plugins で構築した静的ブログです。GitHub Actions でビルドし、GitHub Pages で公開しています。
+    </p>
+    <p class="about-sidebar-section-body">
+      記事・画像などは <a
+        href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
+        target="_blank"
+        rel="noopener noreferrer">CC BY-NC-SA 4.0</a
+      > で公開されています。
+    </p>
+  </div>
+
+  <a href="/about" class="about-sidebar-more">詳細を見る →</a>
+</aside>
+
+<style>
+  .about-sidebar {
+    display: none;
+    position: fixed;
+    top: 5rem;
+    left: 1rem;
+    width: calc((100vw - 820px) / 2 - 2rem);
+    max-height: calc(100vh - 6rem);
+    overflow-y: auto;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem 1rem;
+    z-index: 90;
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+
+  @media (min-width: 1280px) {
+    .about-sidebar {
+      display: block;
+    }
+  }
+
+  .about-sidebar-avatar-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.7rem;
+  }
+
+  .about-sidebar-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 3px solid var(--accent);
+  }
+
+  .about-sidebar-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    text-align: center;
+    line-height: 1.3;
+    margin-bottom: 0.3rem;
+  }
+
+  .about-sidebar-bio {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.5;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .about-sidebar-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .about-sidebar-links a {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 0.28rem 0.4rem;
+    border-radius: 6px;
+    transition:
+      color 0.15s,
+      background 0.15s;
+  }
+
+  .about-sidebar-links a:hover {
+    color: var(--accent);
+    background: var(--bg-tertiary);
+  }
+
+  .about-sidebar-section {
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .about-sidebar-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .about-sidebar-section-body {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0 0 0.4rem;
+  }
+
+  .about-sidebar-section-body a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .about-sidebar-section-body a:hover {
+    text-decoration: underline;
+  }
+
+  .about-sidebar-more {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--accent);
+    text-decoration: none;
+    text-align: center;
+    padding: 0.32rem;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+
+  .about-sidebar-more:hover {
+    background: var(--bg-tertiary);
+  }
+</style>
+
+<script>
+  const sidebar = document.getElementById(
+    "about-sidebar",
+  ) as HTMLElement | null;
+
+  function adjustTop() {
+    const header = document.querySelector(
+      ".site-header",
+    ) as HTMLElement | null;
+    const banner = document.querySelector(".site-banner") as HTMLElement | null;
+    if (!sidebar || !header) return;
+    const headerH = header.offsetHeight;
+    const gap = 28;
+    const bannerBottom = banner ? banner.getBoundingClientRect().bottom : 0;
+    sidebar.style.top =
+      (bannerBottom > headerH ? bannerBottom + gap : headerH + gap) + "px";
+  }
+
+  adjustTop();
+  window.addEventListener("scroll", adjustTop, { passive: true });
+</script>

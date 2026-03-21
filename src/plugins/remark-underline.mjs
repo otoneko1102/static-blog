@@ -1,7 +1,7 @@
 /**
  * remark plugin: Proper __underline__ support
  *
- * Three passes:
+ * Five passes:
  *
  * Pass 1 — strong nodes that came from __:
  *   remark-gfm parses __text__ → strong, just like **text**.
@@ -18,7 +18,13 @@
  *   We tokenize paragraph children by splitting text on "__",
  *   locate paired markers, and serialize the span as <u>…</u>.
  *
- * Pass 4 — orphaned ~~ around inline nodes (GFM strikethrough edge case).
+ * Pass 4 — inline markers left as literal text (**…**, *…*, ~~…~~):
+ *   CommonMark flanking rules cause ** / ~~ to fail when the delimiter
+ *   is adjacent to Unicode punctuation on one side and an alphanumeric
+ *   on the other (e.g. **「text」**word or word~~「text」~~word).
+ *   We regex-replace those remaining text nodes.
+ *
+ * Pass 5 — orphaned ~~ around inline nodes (GFM strikethrough edge case).
  *
  * Place this plugin AFTER remarkGfm in the plugin list.
  */
@@ -171,7 +177,63 @@ export default function remarkUnderline() {
       if (changed) node.children = out;
     });
 
-    // ── Pass 4: orphaned ~~ around inline nodes ────────────────────────────
+    // ── Pass 4: inline markers left as literal text ──────────────────────
+    // CommonMark flanking rules prevent ** / ~~ from opening/closing when
+    // the delimiter is adjacent to Unicode punctuation on one side and an
+    // alphanumeric character on the other.  Examples:
+    //   **「text」**word  → closing ** preceded by 」 (punct) + followed by word char
+    //   word~~「text」~~  → opening ~~ followed by 「 (punct) + not preceded by space/punct
+    // When this happens remark leaves the whole span as a plain text node.
+    // We fix them here with a single regex scan over remaining text nodes.
+    // Bold is tried first so that * inside ** is never misread as italic.
+    const INLINE_MARKER_REGEX =
+      /\*\*([^*\n]+?)\*\*|~~([^~\n]+?)~~|(?<!\*)\*([^*\n]+?)\*(?!\*)/g;
+
+    visit(tree, "text", (node, index, parent) => {
+      if (!parent || typeof index !== "number") return;
+
+      const text = node.value;
+      INLINE_MARKER_REGEX.lastIndex = 0;
+      if (!INLINE_MARKER_REGEX.test(text)) return;
+      INLINE_MARKER_REGEX.lastIndex = 0;
+
+      const children = [];
+      let lastIndex = 0;
+      let match;
+
+      while ((match = INLINE_MARKER_REGEX.exec(text)) !== null) {
+        if (match.index > lastIndex)
+          children.push({
+            type: "text",
+            value: text.slice(lastIndex, match.index),
+          });
+
+        // Determine which alternative matched
+        const tag =
+          match[1] !== undefined
+            ? "strong"
+            : match[2] !== undefined
+              ? "del"
+              : "em";
+        const inner = (match[1] ?? match[2] ?? match[3])
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+
+        children.push({ type: "html", value: `<${tag}>${inner}</${tag}>` });
+        lastIndex = match.index + match[0].length;
+      }
+
+      if (lastIndex < text.length)
+        children.push({ type: "text", value: text.slice(lastIndex) });
+
+      if (children.length > 0) {
+        parent.children.splice(index, 1, ...children);
+        return index + children.length;
+      }
+    });
+
+    // ── Pass 5: orphaned ~~ around inline nodes ────────────────────────────
     // When ~~ is followed/preceded by punctuation (**, __, etc.) the GFM
     // strikethrough tokeniser does not fire. We end up with literal text nodes
     // like "~~" sandwiching strong/em/html nodes inside a paragraph.
@@ -275,6 +337,16 @@ function serializeInline(node) {
         .map(serializeInline)
         .join("")}</a>`;
     }
+    case "image": {
+      const src = (node.url ?? "").replace(/"/g, "&quot;");
+      const alt = (node.alt ?? "").replace(/"/g, "&quot;");
+      const title = node.title
+        ? ` title="${node.title.replace(/"/g, "&quot;")}"`
+        : "";
+      return `<img src="${src}" alt="${alt}"${title} />`;
+    }
+    case "break":
+      return "<br>";
     default:
       if (Array.isArray(node.children))
         return node.children.map(serializeInline).join("");

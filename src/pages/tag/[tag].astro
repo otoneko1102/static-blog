@@ -6,6 +6,7 @@ import FormattedDate from "../../components/FormattedDate.astro";
 import type { CollectionEntry } from "astro:content";
 import { getCollection } from "astro:content";
 import { sortPosts } from "../../consts";
+import AboutSidebar from "../../components/AboutSidebar.astro";
 
 type BlogPost = CollectionEntry<"blog">;
 
@@ -34,6 +35,7 @@ const { tag, posts } = Astro.props as {
 
 <BaseLayout title={`#${tag} の記事`} description={`タグ「${tag}」の記事一覧`}>
   <Header />
+  <AboutSidebar />
   <main class="container">
     <section style="padding: 2em 0;">
       <h1 class="page-heading" style="margin-top: 0;">
