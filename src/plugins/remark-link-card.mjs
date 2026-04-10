@@ -66,17 +66,25 @@ function decodeHtmlEntities(str) {
 function getMeta(html, ...properties) {
   for (const prop of properties) {
     const escaped = escapeRegex(prop);
-    // property/name before content
-    const re1 = new RegExp(
-      `<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"'<>]+)["']`,
+    // property/name before content  (try double-quoted then single-quoted content)
+    const re1d = new RegExp(
+      `<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content="([^"<>]*)"`,
+      "i",
+    );
+    const re1s = new RegExp(
+      `<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content='([^'<>]*)'`,
       "i",
     );
     // content before property/name
-    const re2 = new RegExp(
-      `<meta[^>]+content=["']([^"'<>]+)["'][^>]+(?:property|name)=["']${escaped}["']`,
+    const re2d = new RegExp(
+      `<meta[^>]+content="([^"<>]*)"[^>]+(?:property|name)=["']${escaped}["']`,
       "i",
     );
-    const m = html.match(re1) ?? html.match(re2);
+    const re2s = new RegExp(
+      `<meta[^>]+content='([^'<>]*)'[^>]+(?:property|name)=["']${escaped}["']`,
+      "i",
+    );
+    const m = html.match(re1d) ?? html.match(re1s) ?? html.match(re2d) ?? html.match(re2s);
     if (m) return m[1].trim();
   }
   return null;
