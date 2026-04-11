@@ -6,7 +6,7 @@ import fs from "fs";
 import path from "path";
 import { visit } from "unist-util-visit";
 
-// ビルド時キャッシュ
+// ビルド時メモリキャッシュ（同一ビルド内での重複フェッチ防止）
 const ogpCache = new Map();
 
 // サイトオリジン取得
@@ -81,29 +81,66 @@ function getMeta(html, ...properties) {
   return null;
 }
 
+/** レスポンスから <head> 部分のみを読み取る（最大 32KB） */
+async function readHead(res) {
+  const reader = res.body?.getReader();
+  if (!reader) return res.text();
+
+  const decoder = new TextDecoder();
+  let html = "";
+  const MAX_BYTES = 32 * 1024;
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      totalBytes += value.length;
+      html += decoder.decode(value, { stream: true });
+      // </head> を見つけたら残りは不要
+      if (/<\/head>/i.test(html)) break;
+      if (totalBytes >= MAX_BYTES) break;
+    }
+  } finally {
+    reader.cancel().catch(() => {});
+  }
+  return html;
+}
+
 async function fetchOgp(url) {
   if (ogpCache.has(url)) return ogpCache.get(url);
 
+  // 同一 URL の並行フェッチを防止（Promise を共有）
+  const promise = _doFetchOgp(url);
+  ogpCache.set(url, promise);
+  const result = await promise;
+  ogpCache.set(url, result);
+  return result;
+}
+
+async function _doFetchOgp(url) {
   let result = null;
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
+    const timer = setTimeout(() => controller.abort(), 5000);
 
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; LinkCard/1.0)",
         Accept: "text/html,application/xhtml+xml",
+        // Range ヘッダーで先頭部分のみリクエスト（対応サーバーのみ）
+        Range: "bytes=0-32767",
       },
     });
     clearTimeout(timer);
 
-    if (!res.ok) {
-      ogpCache.set(url, null);
+    if (!res.ok && res.status !== 206) {
       return null;
     }
 
-    const html = await res.text();
+    // レスポンスをストリーミングで読み、</head> を検出したら打ち切り
+    const html = await readHead(res);
 
     const title =
       getMeta(html, "og:title", "twitter:title") ??
@@ -313,7 +350,6 @@ export default function remarkLinkCard() {
             const ogpUrl = isLocal ? resolveUrlForOgp(seg.url) : seg.url;
             const shouldFetch = isRemote || (isLocal && SITE_ORIGIN);
             const ogp = shouldFetch ? await fetchOgp(ogpUrl) : null;
-            if (shouldFetch) console.log(`[link-card] Fetching OGP: ${ogpUrl}`);
 
             replacements.push(buildCard(ogp, seg.url, seg.label));
           } else if (seg.hasContent) {
