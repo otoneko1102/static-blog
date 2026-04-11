@@ -5,6 +5,8 @@ export const SITE_URL = "https://blog.montblank.fun";
 export const TWITTER_HANDLE = "@rin_montblank";
 export const GITHUB_URL = "https://github.com/otoneko1102";
 export const PORTFOLIO_URL = "https://montblank.fun";
+export const AUTHOR_NAME = "まろん｡";
+export const AUTHOR_BIO = "技術とドメインの話が好きな変な人";
 
 /**
  * Canonical sort order used across all pages and navigation:

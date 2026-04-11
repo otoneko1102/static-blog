@@ -1,20 +1,20 @@
 ---
-import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL } from "../consts";
+import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL, AUTHOR_NAME, AUTHOR_BIO } from "../consts";
 ---
 
 <aside class="about-sidebar" id="about-sidebar" aria-label="プロフィール">
   <div class="about-sidebar-avatar-wrap">
     <img
       src="/icon.png"
-      alt="まろん｡"
+      alt={AUTHOR_NAME}
       class="about-sidebar-avatar"
       width="72"
       height="72"
     />
   </div>
 
-  <div class="about-sidebar-name">まろん｡</div>
-  <div class="about-sidebar-bio">技術とドメインの話が好きな変な人</div>
+  <div class="about-sidebar-name">{AUTHOR_NAME}</div>
+  <div class="about-sidebar-bio">{AUTHOR_BIO}</div>
 
   <div class="about-sidebar-links">
     <a href={PORTFOLIO_URL} target="_blank" rel="noopener noreferrer">
