@@ -1,24 +1,15 @@
 /**
- * remark plugin: OGP link card embeds via @[](url) syntax
- *
- * Detects paragraphs of the form:
- *   @[](https://example.com)
- *   @[Custom title](https://example.com)
- *
- * At build time, fetches OGP metadata (title, description, og:image,
- * og:site_name) and renders a rich link card embed.
- * Falls back gracefully when the URL is unreachable or returns no OGP data.
+ * remark: @[](url) 構文で OGP リンクカードを埋め込み
+ * ビルド時に OGP メタデータを取得してリッチカードを生成。
  */
 import fs from "fs";
 import path from "path";
 import { visit } from "unist-util-visit";
 
-// Build-time in-memory cache — avoids duplicate fetches within one build
+// ビルド時キャッシュ
 const ogpCache = new Map();
 
-// Your site origin (used to resolve local `/...` links to full URLs for OGP fetch).
-// We prefer the standard `SITE` env var (Astro sets this), but fall back to parsing
-// `astro.config.mjs` so we don't hardcode the value.
+// サイトオリジン取得
 function resolveSiteOrigin() {
   const fromEnv =
     (typeof process !== "undefined" && process.env.SITE) ||
@@ -39,13 +30,13 @@ function resolveSiteOrigin() {
 
 const SITE_ORIGIN = resolveSiteOrigin();
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ヘルパー
 
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** Decode common HTML entities that appear in meta tag content attributes. */
+/** HTML エンティティをデコード */
 function decodeHtmlEntities(str) {
   if (!str) return str;
   return str
@@ -62,7 +53,7 @@ function decodeHtmlEntities(str) {
     .replace(/&nbsp;/g, " ");
 }
 
-/** Extract a single <meta> content value by property or name. */
+/** <meta> の content 値を抽出 */
 function getMeta(html, ...properties) {
   for (const prop of properties) {
     const escaped = escapeRegex(prop);
@@ -150,12 +141,11 @@ async function fetchOgp(url) {
   return result;
 }
 
-// ── card builder ─────────────────────────────────────────────────────────────
+// カードビルダー
 
 /**
- * Build a mdxJsxFlowElement node tree — the only HTML injection method that
- * @astrojs/mdx accepts from remark plugins (avoids the "unknown node raw" error
- * that arises from type:"html" MDAST → type:"raw" hast → MDX compile failure).
+ * mdxJsxFlowElement ノードを構築。
+ * @astrojs/mdx が remark プラグインから受け付ける唯一の HTML 注入方法。
  */
 function jsxAttr(name, value) {
   return { type: "mdxJsxAttribute", name, value: String(value) };
@@ -222,9 +212,9 @@ function buildCard(ogp, url, customLabel) {
   );
 }
 
-// ── helpers: paragraph splitting ─────────────────────────────────────────────
+// ヘルパー: paragraph 分割
 
-/** Split paragraph children into "lines" delimited by <break> nodes. */
+/** break ノードで行に分割 */
 function splitByBreaks(children) {
   const lines = [];
   let current = [];
@@ -240,7 +230,7 @@ function splitByBreaks(children) {
   return lines;
 }
 
-/** True when a line is exactly the @[...](url) link-card pattern. */
+/** @[...](url) パターンにマッチするか */
 function isCardLine(line) {
   const m = line.filter((c) => !(c.type === "text" && c.value === ""));
   return (
@@ -270,7 +260,7 @@ function resolveUrlForOgp(url) {
   return url;
 }
 
-// ── main plugin ──────────────────────────────────────────────────────────────
+// メインプラグイン
 
 export default function remarkLinkCard() {
   return async (tree) => {

@@ -209,14 +209,13 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
       }
     }
 
-    // Re-run mermaid whenever the theme changes so diagrams match the palette
+    // Re-run on theme change
     function watchTheme() {
       const observer = new MutationObserver(() => {
         document
           .querySelectorAll("pre.mermaid[data-processed]")
           .forEach((el) => {
             el.removeAttribute("data-processed");
-            // Restore original source stored in data-original
             const original = (el as HTMLElement).dataset.original;
             if (original) el.textContent = original;
           });
@@ -228,7 +227,7 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
       });
     }
 
-    // Store original diagram source before mermaid replaces the content
+    // Store original diagram source before mermaid replaces it
     document.querySelectorAll("pre.mermaid").forEach((el) => {
       (el as HTMLElement).dataset.original = el.textContent ?? "";
     });

@@ -32,10 +32,7 @@ const ALERT_TYPES = {
   },
 };
 
-/**
- * Recursively serialise an mdast node to an HTML string fragment.
- * Handles the inline node types that commonly appear inside alert blockquotes.
- */
+/** mdast ノードを HTML 文字列にシリアライズ */
 function serializeNode(node) {
   switch (node.type) {
     case "text":
@@ -52,7 +49,6 @@ function serializeNode(node) {
 
     case "strong": {
       const inner = (node.children ?? []).map(serializeNode).join("");
-      // Respect data.hName set by remark-underline
       const tag = node.data?.hName ?? "strong";
       return `<${tag}>${inner}</${tag}>`;
     }
@@ -113,7 +109,6 @@ function serializeNode(node) {
     }
 
     default:
-      // Fallback: recurse into children if present
       if (Array.isArray(node.children)) {
         return node.children.map(serializeNode).join("");
       }

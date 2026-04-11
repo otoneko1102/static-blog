@@ -63,18 +63,18 @@ function isTwitterUrl(url) {
  * data-type > title > URL パターンの順でチェック。
  */
 function resolveType(src, properties) {
-  // 1. Explicit data-type attribute
+  // 1. data-type 属性
   const explicit = (properties.dataType ?? properties["data-type"] ?? "")
     .toString()
     .toLowerCase()
     .trim();
   if (explicit && KNOWN_TYPES.has(explicit)) return explicit;
 
-  // 2. Title attribute used as type keyword
+  // 2. title 属性
   const titleHint = (properties.title ?? "").toString().toLowerCase().trim();
   if (titleHint && KNOWN_TYPES.has(titleHint)) return titleHint;
 
-  // 3. URL-based detection
+  // 3. URL パターン
   if (isYouTubeUrl(src)) return "youtube";
   if (isTwitterUrl(src)) return "twitter";
 
@@ -119,15 +119,12 @@ function buildAudio(src) {
 
 function buildPdf(src, alt) {
   const label = alt || "PDF";
-  // Desktop: iframe embed
-  // Mobile: fallback card with a direct link (iOS Safari / Android cannot
-  //         reliably render PDFs inside iframes)
   return {
     type: "element",
     tagName: "div",
     properties: { className: ["pdf-embed"] },
     children: [
-      // ── desktop iframe ──────────────────────────────────────────────
+      // desktop iframe
       {
         type: "element",
         tagName: "div",
@@ -147,7 +144,7 @@ function buildPdf(src, alt) {
           },
         ],
       },
-      // ── mobile fallback card ─────────────────────────────────────────
+      // mobile fallback
       {
         type: "element",
         tagName: "div",

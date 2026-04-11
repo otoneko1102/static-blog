@@ -54,12 +54,12 @@ const minLevel =
   const tocPanel = document.getElementById("toc-panel") as HTMLElement | null;
   const tocHeader = document.getElementById("toc-header");
 
-  // Restore collapse state (persisted across visits)
+  // Collapse state (localStorage)
   if (localStorage.getItem("toc-collapsed") === "true") {
     tocPanel?.classList.add("toc--collapsed");
   }
 
-  // Whole header row is the click target for collapse/expand
+  // Whole header row toggles collapse
   function toggleCollapse() {
     const collapsed = tocPanel?.classList.toggle("toc--collapsed");
     localStorage.setItem("toc-collapsed", collapsed ? "true" : "false");
@@ -72,7 +72,7 @@ const minLevel =
     }
   });
 
-  // Adjust TOC top to stay below the site banner (banner scrolls away naturally)
+  // Adjust TOC top to stay below the site banner
   function adjustTocTop() {
     const header = document.querySelector(".site-header") as HTMLElement | null;
     const banner = document.querySelector(".site-banner") as HTMLElement | null;
@@ -86,7 +86,7 @@ const minLevel =
   adjustTocTop();
   window.addEventListener("scroll", adjustTocTop, { passive: true });
 
-  // Mobile open / close via custom events dispatched by BlogPost
+  // Mobile open/close via custom events
   window.addEventListener("toc:open", () => {
     tocPanel?.classList.add("toc--open");
   });
@@ -94,7 +94,7 @@ const minLevel =
     tocPanel?.classList.remove("toc--open");
   });
 
-  // Close when clicking outside (mobile)
+  // Close on outside click (mobile)
   document.addEventListener("click", (e) => {
     const target = e.target as Element;
     if (!target.closest("#toc-panel") && !target.closest("#action-toc-btn")) {
@@ -107,7 +107,7 @@ const minLevel =
     }
   });
 
-  // Intercept TOC anchor clicks: scroll with precise header offset
+  // Scroll to heading with header offset
   tocPanel
     ?.querySelectorAll<HTMLAnchorElement>("a.toc-link")
     .forEach((link) => {
@@ -121,13 +121,13 @@ const minLevel =
           ".site-header",
         ) as HTMLElement | null;
         const headerH = header?.offsetHeight ?? 56;
-        const extra = 20; // comfortable gap below the fixed header
+        const extra = 20;
         const top =
           target.getBoundingClientRect().top + window.scrollY - headerH - extra;
 
         window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
 
-        // Close panel on mobile after navigation
+        // Close on mobile after navigation
         if (window.innerWidth < 1280) {
           tocPanel?.classList.remove("toc--open");
           document
