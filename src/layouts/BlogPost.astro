@@ -30,6 +30,8 @@ const {
   heroImage,
 } = Astro.props;
 
+const ogImage = `/og/${id}.png`;
+
 const sortedTags = [...tags].sort((a, b) => a.localeCompare(b, "ja"));
 
 // Get all posts for prev/next navigation — same canonical order as the list page
@@ -65,7 +67,7 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
 <BaseLayout
   title={title}
   description={description}
-  image={heroImage}
+  image={ogImage}
   article={true}
 >
   <Header />
