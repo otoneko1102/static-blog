@@ -8,16 +8,7 @@ export const PORTFOLIO_URL = "https://montblank.fun";
 export const AUTHOR_NAME = "まろん｡";
 export const AUTHOR_BIO = "技術とドメインの話が好きな変な人";
 
-/**
- * Canonical sort order used across all pages and navigation:
- *
- *   1. Pinned articles first, sorted among themselves by pubDate descending
- *      (newest pinned article appears at the very top).
- *   2. Non-pinned articles sorted by pubDate descending.
- *
- * This is a pure function — it returns a new sorted array and does not
- * mutate the input.
- */
+/** ピン止め記事を先頭に、pubDate 降順でソート（元配列は変更しない） */
 export function sortPosts<
   T extends { data: { pinned?: boolean; pubDate: Date } },
 >(posts: T[]): T[] {

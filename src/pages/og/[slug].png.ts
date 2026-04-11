@@ -11,15 +11,8 @@ let thumbnailDataUri: string | null = null;
 
 async function loadFont(): Promise<ArrayBuffer> {
   if (fontData) return fontData;
-  const res = await fetch(
-    "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap",
-  );
-  const css = await res.text();
-  const match = css.match(/src:\s*url\(([^)]+)\)/);
-  if (!match) throw new Error("Failed to parse Google Fonts CSS");
-  const fontUrl = match[1];
-  const fontRes = await fetch(fontUrl);
-  fontData = await fontRes.arrayBuffer();
+  const fontPath = path.resolve("src/assets/NotoSansJP-Bold.woff2");
+  fontData = fs.readFileSync(fontPath).buffer as ArrayBuffer;
   return fontData;
 }
 
@@ -91,44 +84,14 @@ export const GET: APIRoute = async ({ props }) => {
               },
             },
           },
-          // Title
-          // {
-          //   type: "div",
-          //   props: {
-          //     style: {
-          //       display: "flex",
-          //       justifyContent: "center",
-          //       alignItems: "center",
-          //       flex: "1",
-          //       width: "100%",
-          //       padding: "60px 80px",
-          //     },
-          //     children: {
-          //       type: "div",
-          //       props: {
-          //         style: {
-          //           fontSize: title.length > 30 ? "48px" : title.length > 20 ? "56px" : "64px",
-          //           fontWeight: "700",
-          //           color: "#ffffff",
-          //           lineHeight: "1.4",
-          //           textAlign: "center",
-          //           wordBreak: "break-word",
-          //           maxWidth: "100%",
-          //           textShadow: "0 2px 8px rgba(0,0,0,0.6)",
-          //         },
-          //         children: title,
-          //       },
-          //     },
-          //   },
-          // },
-          // Site name at bottom
+          // Site name at top
           {
             type: "div",
             props: {
               style: {
                 display: "flex",
                 alignItems: "center",
-                paddingBottom: "40px",
+                paddingTop: "40px",
               },
               children: {
                 type: "div",
