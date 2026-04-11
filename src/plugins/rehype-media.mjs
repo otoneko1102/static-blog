@@ -1,26 +1,12 @@
 /**
- * rehype plugin: Extend image syntax for media embeds
+ * rehype: 画像構文をメディア埋め込みに拡張
  *
- * Type detection priority (highest → lowest):
- *   1. data-type attribute  (MDX: <img src="…" data-type="video" />)
- *   2. title attribute      (Markdown: ![alt](url "video"))
- *   3. URL extension        (legacy fallback: .mp4, .mp3, .pdf …)
- *
- * Supported type values (case-insensitive):
- *   video    → <video controls>
- *   audio    → <audio controls>
- *   pdf      → <iframe> PDF embed
- *   youtube  → YouTube iframe
- *   twitter / x → Twitter/X blockquote embed
- *
- * URL-based auto-detection (still used when no explicit type is set):
- *   youtube.com / youtu.be → youtube
- *   twitter.com / x.com status → twitter
- *   extension-based MIME mapping → video / audio / pdf
+ * 型検出優先度: data-type 属性 > title 属性 > URL 拡張子
+ * 対応: video, audio, pdf, youtube, twitter/x
  */
 import { visit } from "unist-util-visit";
 
-// ── MIME / extension tables ──────────────────────────────────────────────────
+// メディアタイプ定義
 
 const EXT_TO_TYPE = {
   ".mp4": "video",
@@ -43,7 +29,7 @@ const KNOWN_TYPES = new Set([
   "x",
 ]);
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ヘルパー
 
 function getExtension(url) {
   try {
@@ -73,12 +59,8 @@ function isTwitterUrl(url) {
 }
 
 /**
- * Resolve the media type for a given img node.
- *
- * Checks (in order):
- *   1. data-type attribute on the element
- *   2. title attribute used as a type keyword
- *   3. URL-based auto-detection (YouTube / Twitter patterns, then extension)
+ * img ノードのメディアタイプを解決。
+ * data-type > title > URL パターンの順でチェック。
  */
 function resolveType(src, properties) {
   // 1. Explicit data-type attribute
@@ -97,10 +79,10 @@ function resolveType(src, properties) {
   if (isTwitterUrl(src)) return "twitter";
 
   const ext = getExtension(src);
-  return EXT_TO_TYPE[ext] ?? null; // null → treat as plain image
+  return EXT_TO_TYPE[ext] ?? null;
 }
 
-// ── builders ─────────────────────────────────────────────────────────────────
+// ビルダー
 
 function buildVideo(src, alt) {
   return {
@@ -273,7 +255,7 @@ function buildTwitter(src) {
   };
 }
 
-// ── main plugin ──────────────────────────────────────────────────────────────
+// メインプラグイン
 
 export default function rehypeMedia() {
   return (tree) => {

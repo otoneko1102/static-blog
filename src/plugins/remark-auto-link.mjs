@@ -1,7 +1,4 @@
-/**
- * remark plugin: Auto-link bare URLs in text
- * Converts standalone https://... URLs into clickable links
- */
+/** remark: テキスト中の裸 URL を自動リンク化 */
 import { visit } from "unist-util-visit";
 
 const URL_REGEX = /(https?:\/\/[^\s<>\])"]+)/g;

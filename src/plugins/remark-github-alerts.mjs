@@ -1,9 +1,6 @@
 /**
- * remark plugin: GitHub-style alerts
+ * remark: GitHub スタイルアラート
  * > [!NOTE] / > [!TIP] / > [!IMPORTANT] / > [!WARNING] / > [!CAUTION]
- *
- * Icons are rendered via the iconify-icon web component instead of emoji,
- * keeping visual consistency with the rest of the UI.
  */
 import { visit } from "unist-util-visit";
 
