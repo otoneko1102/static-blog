@@ -3,22 +3,13 @@ import { glob } from "astro/loaders";
 import { z } from "astro/zod";
 
 /**
- * Coerce a date value to a JavaScript Date object.
- *
- * Accepted formats (in addition to any value already a Date):
- *   "2026-03-15"          → 2026-03-15 00:00:00 JST  (UTC+9)
- *   "2026-03-15 09:15"    → 2026-03-15 09:15:00 JST
- *   "2026-03-15T00:00:00.000Z"  → parsed as-is (existing ISO content)
- *   Any other string      → passed to new Date() as a last resort
+ * 日付値を JST として Date に変換する。
+ * "2026-03-15" → JST 00:00, "2026-03-15 09:15" → JST 09:15, ISO文字列はそのまま。
  */
 function toJstDate(val: unknown): Date | undefined {
   if (val instanceof Date) return val;
   if (val == null) return undefined;
 
-  // @ts-ignore
-  if (val === null) return null;
-  // @ts-ignore
-  if (val === undefined) return undefined;
   const s = String(val).trim();
   if (s === "" || s.toLowerCase() === "null" || s.toLowerCase() === "undefined")
     return undefined;
@@ -28,7 +19,7 @@ function toJstDate(val: unknown): Date | undefined {
     return new Date(`${s}T00:00:00+09:00`);
   }
 
-  // "YYYY-MM-DD HH:mm" / "YYYY-MM-DD H:m" / "YYYY-MM-DD HH:mm:ss" — interpret as JST
+  // "YYYY-MM-DD HH:mm" / "YYYY-MM-DD HH:mm:ss" → JST
   const datetimeMatch = s.match(
     /^(\d{4}-\d{2}-\d{2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/,
   );
@@ -40,14 +31,14 @@ function toJstDate(val: unknown): Date | undefined {
     return new Date(`${date}T${hh}:${mm}:${ss}+09:00`);
   }
 
-  // ISO 8601 / RFC 2822 / anything else — let the JS engine handle it
+  // ISO 8601 等 → JS エンジンに委ねる
   return new Date(s);
 }
 
-/** Zod schema that accepts the human-friendly JST date formats above. */
+/** JST 日付フォーマットを受け付ける Zod スキーマ */
 const jstDate = z.preprocess(toJstDate, z.date());
 
-/** Version of `jstDate` that supports `null` (for optional dates like updatedDate). */
+/** nullable 版（updatedDate 用） */
 const jstNullableDate = z.preprocess(toJstDate, z.date().nullable());
 
 const blog = defineCollection({

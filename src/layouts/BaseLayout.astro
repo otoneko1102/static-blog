@@ -79,12 +79,12 @@ const pageTitle = title === SITE_TITLE ? title : `${title} | ${SITE_TITLE}`;
       rel="stylesheet"
     />
 
-    <!-- Iconify web component (Material Symbols + all icon sets, no-JS fallback graceful) -->
+    <!-- Iconify -->
     <script
       src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"
       is:inline></script>
 
-    <!-- Prevent theme flash: apply stored / system theme before first paint -->
+    <!-- Prevent theme flash -->
     <script is:inline>
       (function () {
         var stored = localStorage.getItem("theme");

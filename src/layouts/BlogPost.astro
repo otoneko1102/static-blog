@@ -34,7 +34,7 @@ const ogImage = `/og/${id}.png`;
 
 const sortedTags = [...tags].sort((a, b) => a.localeCompare(b, "ja"));
 
-// Get all posts for prev/next navigation — same canonical order as the list page
+  // Get all posts for prev/next navigation
 const allPosts = sortPosts(
   (await getCollection("blog")).filter((p) => !p.data.hidden),
 );
@@ -46,7 +46,7 @@ const nextPost = currentIndex > 0 ? allPosts[currentIndex - 1] : null;
 
 const articleUrl = `${SITE_URL}/blog/${id}`;
 
-// Calculate reading time (Japanese: ~500 chars/min)
+  // 読了時間（日本語: 約500文字/分）
 const slotContent = await Astro.slots.render("default");
 const textLength = slotContent.replace(/<[^>]*>/g, "").length;
 const readingTime = Math.max(1, Math.ceil(textLength / 500));
@@ -139,10 +139,9 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
   </main>
   <Footer />
 
-  <!-- Fixed TOC (sidebar on desktop, overlay on mobile) -->
   <TableOfContents title={title} headings={headings} />
 
-  <!-- TOC toggle: show the button injected by BaseLayout, wire up click -->
+  <!-- TOC toggle -->
   <script>
     const tocBtn = document.getElementById(
       "action-toc-btn",
@@ -160,7 +159,7 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
     });
   </script>
 
-  <!-- KaTeX fallback: render plain-text delimiters that were not converted at build time -->
+  <!-- KaTeX fallback -->
   <script>
     async function initKatexFallback() {
       const articleRoot = document.querySelector(".article-content");
@@ -187,7 +186,7 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
     initKatexFallback();
   </script>
 
-  <!-- Mermaid: initialise once the page is interactive -->
+  <!-- Mermaid -->
   <script>
     async function initMermaid() {
       const mermaidElements =
@@ -283,7 +282,7 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
     addCodeCopyButtons();
   </script>
 
-  <!-- Wrap tables in scroll containers for horizontal scroll on mobile -->
+  <!-- Wrap tables for horizontal scroll -->
   <script>
     document
       .querySelectorAll<HTMLElement>(".article-content table")
@@ -296,7 +295,7 @@ while ((headingMatch = headingRegex.exec(slotContent)) !== null) {
       });
   </script>
 
-  <!-- Twitter / X embed widget -->
+  <!-- Twitter embed -->
   <script
     is:inline
     async
