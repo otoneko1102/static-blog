@@ -4,6 +4,7 @@ import {
   SITE_DESCRIPTION,
   SITE_URL,
   TWITTER_HANDLE,
+  AUTHOR_NAME,
 } from "../consts";
 import "../styles/global.css";
 import "katex/dist/katex.min.css";
@@ -46,7 +47,7 @@ const pageTitle = title === SITE_TITLE ? title : `${title} | ${SITE_TITLE}`;
     <title>{pageTitle}</title>
     <meta name="title" content={pageTitle} />
     <meta name="description" content={description} />
-    <meta name="author" content="まろん" />
+    <meta name="author" content={AUTHOR_NAME} />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content={article ? "article" : "website"} />

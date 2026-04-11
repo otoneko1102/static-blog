@@ -2,7 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
-import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL } from "../consts";
+import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL, AUTHOR_NAME, AUTHOR_BIO } from "../consts";
 ---
 
 <BaseLayout title="About" description="私について">
@@ -23,17 +23,17 @@ import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL } from "../consts";
       >
         <img
           src="/icon.png"
-          alt="まろん｡"
+          alt={AUTHOR_NAME}
           style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent); margin: 0;"
         />
         <div>
           <h2
             style="margin: 0 0 0.25em; font-size: 1.3rem; border: none; padding: 0;"
           >
-            まろん｡
+            {AUTHOR_NAME}
           </h2>
           <p style="margin: 0; color: var(--text-secondary);">
-            技術とドメインの話が好きな変な人
+            {AUTHOR_BIO}
           </p>
         </div>
       </div>

@@ -19,10 +19,11 @@ import remarkUnderline from "./src/plugins/remark-underline.mjs";
 import rehypeUnderline from "./src/plugins/rehype-underline.mjs";
 import rehypeMedia from "./src/plugins/rehype-media.mjs";
 import rehypeExternalLinks from "./src/plugins/rehype-external-links.mjs";
+import { SITE_URL } from "./src/consts.ts";
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://blog.montblank.fun",
+  site: SITE_URL,
   integrations: [
     mdx(),
     sitemap(),
