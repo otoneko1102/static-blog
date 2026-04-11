@@ -1,5 +1,5 @@
 /**
- * Migration script: Convert legacy blog data to Astro content collection
+ * マイグレーション: レガシーブログデータを Astro Content Collection に変換
  *
  * Usage: node scripts/migrate.mjs
  */
@@ -19,10 +19,7 @@ const OUTPUT_CONTENT_DIR = path.join(ROOT, "src", "content", "blog");
 const OUTPUT_PUBLIC_FILES = path.join(ROOT, "public", "files");
 const OUTPUT_PUBLIC_ASSETS = path.join(ROOT, "public");
 
-/**
- * Convert custom markdown syntax to standard/HTML equivalents
- * This preprocesses the markdown BEFORE Astro's remark parser sees it
- */
+/** カスタム Markdown 構文を標準/HTML に変換 */
 function convertCustomSyntax(content) {
   // Convert :::...:::  (Mermaid) → ```mermaid code blocks
   content = content.replace(

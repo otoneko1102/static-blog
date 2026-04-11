@@ -1,11 +1,7 @@
 /**
- * remark plugin: Keep <details><summary> from being wrapped in <p> tags
- * Since details blocks are now converted to HTML during migration,
- * this plugin is a no-op placeholder kept for future use.
+ * remark-details: no-op
+ * details ブロックはマイグレーション時に HTML に変換済み。将来用に保持。
  */
 export default function remarkDetails() {
-  return (tree) => {
-    // Details are now handled during migration as raw HTML
-    // This plugin is kept as a no-op for potential future use
-  };
+  return () => {};
 }

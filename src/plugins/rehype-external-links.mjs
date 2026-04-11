@@ -1,9 +1,4 @@
-/**
- * rehype plugin: Add target="_blank" rel="noopener noreferrer"
- * to all external links (href starting with http:// or https://).
- *
- * Internal links (relative paths, anchors, mailto:, etc.) are left untouched.
- */
+/** rehype: 外部リンクに target="_blank" rel="noopener noreferrer" を付与 */
 import { visit } from "unist-util-visit";
 
 const EXTERNAL_RE = /^https?:\/\//i;

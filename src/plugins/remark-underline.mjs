@@ -1,32 +1,15 @@
 /**
- * remark plugin: Proper __underline__ support
+ * remark: __underline__ サポート
  *
- * Five passes:
+ * 5パスで処理:
+ * 1. __ 由来の strong ノードを <u> に変換
+ * 2. テキストノード内の未解析 __…__ を正規表現で変換
+ * 3. paragraph 内のクロスノード __ ペアを解決
+ * 3.5. CJK文字隣接時の ** / ~~ 誤ペアリングを修正
+ * 4. テキストに残った ** / ~~ / * マーカーを変換
+ * 5. 孤立した ~~ を解決
  *
- * Pass 1 — strong nodes that came from __:
- *   remark-gfm parses __text__ → strong, just like **text**.
- *   We distinguish them by looking at source[start..start+2].
- *   Works for __STR1**STR2**STR3__ (outer __ wraps entire strong).
- *
- * Pass 2 — plain text nodes with literal __…__:
- *   When __ flanking rules fail (e.g. Japanese on both sides),
- *   remark leaves the raw text. We regex-replace those.
- *
- * Pass 3 — cross-node __ pairs in a paragraph:
- *   Case: __Japanese<strong>text</strong>more__ stays as separate
- *   text/strong nodes because the __ was eaten partially into text.
- *   We tokenize paragraph children by splitting text on "__",
- *   locate paired markers, and serialize the span as <u>…</u>.
- *
- * Pass 4 — inline markers left as literal text (**…**, *…*, ~~…~~):
- *   CommonMark flanking rules cause ** / ~~ to fail when the delimiter
- *   is adjacent to Unicode punctuation on one side and an alphanumeric
- *   on the other (e.g. **「text」**word or word~~「text」~~word).
- *   We regex-replace those remaining text nodes.
- *
- * Pass 5 — orphaned ~~ around inline nodes (GFM strikethrough edge case).
- *
- * Place this plugin AFTER remarkGfm in the plugin list.
+ * remarkGfm の後に配置すること。
  */
 import { visit } from "unist-util-visit";
 
@@ -37,16 +20,12 @@ export default function remarkUnderline() {
   return (tree, file) => {
     const source = String(file.value ?? file);
 
-    // ── Pass 1: strong nodes already created by remark-parse ──────────────
-    // Detect whether delimiter is __ (underline) or ** (bold) by reading
-    // the file source at the node's character offset.
+    // Pass 1: __ 由来の strong ノードを検出
     visit(tree, "strong", (node) => {
       const start = node.position?.start?.offset;
       const end = node.position?.end?.offset;
       if (typeof start !== "number" || typeof end !== "number") return;
 
-      // The position range covers the delimiters themselves.
-      // Check the first 2 chars of the range for "__".
       const startDelim = source.slice(start, start + 2);
       const endDelim = source.slice(end - 2, end);
 
@@ -57,9 +36,7 @@ export default function remarkUnderline() {
       }
     });
 
-    // ── Pass 2: text nodes with un-parsed __text__ (non-word boundaries) ──
-    // e.g. "日本語__テキスト__日本語" stays as plain text because micromark's
-    // flanking-run rules require Unicode alphanumerics NOT to adjoin __.
+    // Pass 2: 未解析の __text__ を変換
     visit(tree, "text", (node, index, parent) => {
       if (!parent || typeof index !== "number") return;
 
@@ -93,12 +70,7 @@ export default function remarkUnderline() {
       }
     });
 
-    // ── Pass 3: cross-node __ pairs in a paragraph ────────────────────────
-    // Handles cases like:
-    //   __Japanese<strong>text</strong>more__
-    // which remark leaves as: text("__Japanese"), strong("text"), text("more__")
-    // We tokenize the whole paragraph's children by splitting text nodes on "__",
-    // then wrap everything between paired markers into <u>…</u>.
+    // Pass 3: クロスノード __ ペア
     const BLOCK_TYPES = new Set([
       "paragraph",
       "listItem",
@@ -124,21 +96,18 @@ export default function remarkUnderline() {
         }
       }
 
-      // Count markers; if fewer than 2 there's nothing to do
+      // Count markers
       const markerCount = tokens.filter((t) => t.kind === "marker").length;
       if (markerCount < 2) return;
 
-      // Build output by pairing markers
       const out = [];
-      let buffer = null; // null = outside underline, [] = collecting inside underline
+      let buffer = null;
 
       for (const tok of tokens) {
         if (tok.kind === "marker") {
           if (buffer === null) {
-            // Start collecting underline content
             buffer = [];
           } else {
-            // Close underline: serialize buffer as <u>…</u>
             const inner = buffer
               .map((t) =>
                 t.kind === "text"
@@ -161,7 +130,7 @@ export default function remarkUnderline() {
         }
       }
 
-      // Unclosed marker: treat the opening __ as literal text
+      // Unclosed marker: treat as literal text
       if (buffer !== null) {
         out.push({ type: "text", value: "__" });
         for (const t of buffer) {
@@ -170,34 +139,21 @@ export default function remarkUnderline() {
         }
       }
 
-      // Only replace if something actually changed
+      // Only replace if changed
       const changed =
         out.length !== node.children.length ||
         out.some((o, i) => o !== node.children[i]);
       if (changed) node.children = out;
     });
 
-    // ── Pass 3.5: fix wrongly-paired ** / ~~ (CJK flanking rule mismatch) ──
-    // When ** or ~~ is adjacent to CJK punctuation like 「」, CommonMark
-    // flanking rules can pair the WRONG delimiters.  For example:
-    //   **「text1」**plaintext**「text2」**
-    // The closing ** after 「text1」 is NOT right-flanking (preceded by 」
-    // punctuation, followed by a letter), so it cannot close.  The ** before
-    // 「text2」 IS right-flanking (preceded by a letter), so it unexpectedly
-    // closes the opening ** that was meant to open 「text1」, producing:
-    //   text("**「text1」") + strong("plaintext") + text("「text2」**…")
-    // This pass detects the pattern:
-    //   text("prefix<delim>content1") + wrongNode + text("content2<delim>suffix")
-    // and reconstructs it as:
-    //   text("prefix") + wrappedNode(content1) + text("wrongInner") + wrappedNode(content2) + text("suffix")
-    // Handles: ** → strong, ~~ → del
+    // Pass 3.5: CJK 隣接時の ** / ~~ 誤ペアリング修正
     const MISPAIR_PATTERNS = [
       {
         nodeType: "strong",
         openRe:  /^([\s\S]*)\*\*([^*\n]+)$/,
         closeRe: /^([^*\n]+?)\*\*([\s\S]*)$/,
         tag: "strong",
-        skip: (s) => s.data?.hName === "u",  // skip underline nodes
+        skip: (s) => s.data?.hName === "u",
       },
       {
         nodeType: "delete",
@@ -207,9 +163,7 @@ export default function remarkUnderline() {
         skip: () => false,
       },
       {
-        // Single * italic — must not match ** (bold) delimiters.
-        // openRe: last single * (not preceded or followed by another *)
-        // closeRe: first single * (not preceded or followed by another *)
+        // Single * italic
         nodeType: "emphasis",
         openRe:  /^([\s\S]*)(?<!\*)\*(?!\*)([^*\n]+)$/,
         closeRe: /^([^*\n]+?)(?<!\*)\*(?!\*)([\s\S]*)$/,
@@ -217,7 +171,7 @@ export default function remarkUnderline() {
         skip: () => false,
       },
       {
-        // Single _ italic (remark-gfm emphasis via _)
+        // Single _ italic
         nodeType: "emphasis",
         openRe:  /^([\s\S]*)(?<!_)_(?!_)([^_\n]+)$/,
         closeRe: /^([^_\n]+?)(?<!_)_(?!_)([\s\S]*)$/,
@@ -247,9 +201,9 @@ export default function remarkUnderline() {
             continue;
           }
 
-          // t1 must end with <delim>content  (the delimiter was an intended opener)
+          // t1 must end with <delim>content
           const openMatch = t1.value.match(openRe);
-          // t2 must start with content<delim>  (the delimiter was an intended closer)
+          // t2 must start with content<delim>
           const closeMatch = t2.value.match(closeRe);
 
           if (!openMatch || !closeMatch) { i++; continue; }
@@ -257,7 +211,7 @@ export default function remarkUnderline() {
           const [, beforeOpen, openContent]  = openMatch;
           const [, closeContent, afterClose] = closeMatch;
 
-          // The wrongly-marked span becomes plain (un-marked) HTML
+          // 誤マークされた span をプレーン HTML に
           const wrongHtml = (s.children ?? []).map(serializeInline).join("");
 
           const esc = (str) =>
@@ -271,22 +225,11 @@ export default function remarkUnderline() {
           if (afterClose)  replacement.push({ type: "text", value: afterClose });
 
           kids.splice(i, 3, ...replacement);
-          // Don't advance i: re-check from the same position for chained patterns.
-          // The new node at kids[i] won't re-trigger (text without trailing delimiter,
-          // or an html node) so the loop will naturally increment i next iteration.
         }
       });
     }
 
-    // ── Pass 4: inline markers left as literal text ──────────────────────
-    // CommonMark flanking rules prevent ** / ~~ from opening/closing when
-    // the delimiter is adjacent to Unicode punctuation on one side and an
-    // alphanumeric character on the other.  Examples:
-    //   **「text」**word  → closing ** preceded by 」 (punct) + followed by word char
-    //   word~~「text」~~  → opening ~~ followed by 「 (punct) + not preceded by space/punct
-    // When this happens remark leaves the whole span as a plain text node.
-    // We fix them here with a single regex scan over remaining text nodes.
-    // Bold is tried first so that * inside ** is never misread as italic.
+    // Pass 4: テキストに残った ** / ~~ / * マーカーを変換
     const INLINE_MARKER_REGEX =
       /\*\*([^*\n]+?)\*\*|~~([^~\n]+?)~~|(?<!\*)\*([^*\n]+?)\*(?!\*)/g;
 
@@ -334,11 +277,7 @@ export default function remarkUnderline() {
       }
     });
 
-    // ── Pass 5: orphaned ~~ around inline nodes ────────────────────────────
-    // When ~~ is followed/preceded by punctuation (**, __, etc.) the GFM
-    // strikethrough tokeniser does not fire. We end up with literal text nodes
-    // like "~~" sandwiching strong/em/html nodes inside a paragraph.
-    // We scan every block container and collapse those sequences.
+    // Pass 5: 孤立した ~~ を解決
     visit(tree, (node) => {
       if (!BLOCK_TYPES.has(node.type) || !Array.isArray(node.children)) return;
 

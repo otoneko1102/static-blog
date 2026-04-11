@@ -1,7 +1,4 @@
-/**
- * remark plugin: Convert ```mermaid code blocks to <pre class="mermaid">
- * This is rendered client-side by the Mermaid library.
- */
+/** remark: ```mermaid コードブロックを <pre class="mermaid"> に変換 */
 import { visit } from "unist-util-visit";
 
 export default function remarkMermaid() {

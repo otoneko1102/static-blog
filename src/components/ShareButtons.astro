@@ -50,7 +50,7 @@ const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(t
     try {
       await navigator.clipboard.writeText(url);
     } catch {
-      // Fallback for older browsers / non-secure contexts
+      // Fallback for older browsers
       const ta = document.createElement("textarea");
       ta.value = url;
       ta.style.position = "fixed";
@@ -63,8 +63,6 @@ const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(t
 
     if (copyIcon)
       copyIcon.setAttribute("icon", "material-symbols:check-circle-outline");
-    const label = btn.querySelector("iconify-icon + text, iconify-icon");
-    // Update the text node directly
     const textNode = Array.from(btn.childNodes).find(
       (n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim(),
     );
