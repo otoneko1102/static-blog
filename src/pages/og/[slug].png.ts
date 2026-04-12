@@ -84,14 +84,41 @@ export const GET: APIRoute = async ({ props }) => {
               },
             },
           },
-          // Site name at top
+          // Article title
+          {
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                flexGrow: "1",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "40px 60px",
+                textAlign: "center",
+              },
+              children: {
+                type: "div",
+                props: {
+                  style: {
+                    fontSize: title.length > 30 ? "42px" : "52px",
+                    fontWeight: "700",
+                    color: "#ffffff",
+                    lineHeight: "1.4",
+                    textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+                  },
+                  children: title,
+                },
+              },
+            },
+          },
+          // Site name at bottom
           {
             type: "div",
             props: {
               style: {
                 display: "flex",
                 alignItems: "center",
-                paddingTop: "40px",
+                paddingBottom: "40px",
               },
               children: {
                 type: "div",
