@@ -1,10 +1,14 @@
 /**
  * remark: @[](url) 構文で OGP リンクカードを埋め込み
  * ビルド時に OGP メタデータを取得してリッチカードを生成。
+ * ローカル記事リンク (/blog/xxx) はファイルシステムから直接読み取り。
  */
 import fs from "fs";
 import path from "path";
 import { visit } from "unist-util-visit";
+import matter from "gray-matter";
+import he from "he";
+import { load as cheerioLoad } from "cheerio";
 
 // ビルド時メモリキャッシュ（同一ビルド内での重複フェッチ防止）
 const ogpCache = new Map();
@@ -30,53 +34,83 @@ function resolveSiteOrigin() {
 
 const SITE_ORIGIN = resolveSiteOrigin();
 
+// ローカル記事メタデータのキャッシュ
+const localArticleCache = new Map();
+
+/** consts.ts から SITE_TITLE を取得 */
+function resolveSiteTitle() {
+  try {
+    const constsPath = path.resolve(process.cwd(), "src/consts.ts");
+    const text = fs.readFileSync(constsPath, "utf8");
+    const m = text.match(/SITE_TITLE\s*=\s*["']([^"']+)["']/);
+    return m ? m[1] : "";
+  } catch {
+    return "";
+  }
+}
+
+const SITE_TITLE_VALUE = resolveSiteTitle();
+
+/**
+ * ローカルの /blog/{slug} パスから記事メタデータを直接取得。
+ * HTTP 不要で GitHub Actions 上でも確実に動作。
+ */
+function resolveLocalArticle(localPath) {
+  if (localArticleCache.has(localPath)) return localArticleCache.get(localPath);
+
+  // /blog/{slug} or /blog/{slug}/ からスラッグを抽出
+  const slugMatch = localPath.match(/^\/blog\/([^/]+)\/?$/);
+  if (!slugMatch) {
+    localArticleCache.set(localPath, null);
+    return null;
+  }
+
+  const slug = slugMatch[1];
+  const contentDir = path.resolve(process.cwd(), "src/content/blog");
+
+  // .mdx or .md を探す
+  let filePath = null;
+  for (const ext of [".mdx", ".md"]) {
+    const candidate = path.join(contentDir, `${slug}${ext}`);
+    if (fs.existsSync(candidate)) {
+      filePath = candidate;
+      break;
+    }
+  }
+
+  if (!filePath) {
+    localArticleCache.set(localPath, null);
+    return null;
+  }
+
+  try {
+    const raw = fs.readFileSync(filePath, "utf8");
+    const { data } = matter(raw);
+
+    const result = {
+      title: data.title || slug,
+      description: data.description || "",
+      image: `/og/${slug}.png`,
+      siteName: SITE_TITLE_VALUE || "Blog",
+    };
+
+    localArticleCache.set(localPath, result);
+    return result;
+  } catch {
+    localArticleCache.set(localPath, null);
+    return null;
+  }
+}
+
 // ヘルパー
 
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/** HTML エンティティをデコード */
-function decodeHtmlEntities(str) {
-  if (!str) return str;
-  return str
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#x27;/gi, "'")
-    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))
-    .replace(/&#x([0-9a-fA-F]+);/gi, (_, hex) =>
-      String.fromCharCode(parseInt(hex, 16)),
-    )
-    .replace(/&apos;/g, "'")
-    .replace(/&nbsp;/g, " ");
-}
-
-/** <meta> の content 値を抽出 */
-function getMeta(html, ...properties) {
+/** HTML から <meta> の content 値を抽出（cheerio で DOM パース） */
+function getMeta($, ...properties) {
   for (const prop of properties) {
-    const escaped = escapeRegex(prop);
-    // property/name before content  (try double-quoted then single-quoted content)
-    const re1d = new RegExp(
-      `<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content="([^"<>]*)"`,
-      "i",
-    );
-    const re1s = new RegExp(
-      `<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content='([^'<>]*)'`,
-      "i",
-    );
-    // content before property/name
-    const re2d = new RegExp(
-      `<meta[^>]+content="([^"<>]*)"[^>]+(?:property|name)=["']${escaped}["']`,
-      "i",
-    );
-    const re2s = new RegExp(
-      `<meta[^>]+content='([^'<>]*)'[^>]+(?:property|name)=["']${escaped}["']`,
-      "i",
-    );
-    const m = html.match(re1d) ?? html.match(re1s) ?? html.match(re2d) ?? html.match(re2s);
-    if (m) return m[1].trim();
+    const value =
+      $(`meta[property="${prop}"]`).attr("content") ??
+      $(`meta[name="${prop}"]`).attr("content");
+    if (value != null) return value.trim();
   }
   return null;
 }
@@ -141,21 +175,21 @@ async function _doFetchOgp(url) {
 
     // レスポンスをストリーミングで読み、</head> を検出したら打ち切り
     const html = await readHead(res);
+    const $ = cheerioLoad(html);
 
     const title =
-      getMeta(html, "og:title", "twitter:title") ??
-      html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ??
-      url;
+      getMeta($, "og:title", "twitter:title") ??
+      ($("title").first().text().trim() || url);
 
     const description =
-      getMeta(html, "og:description", "twitter:description", "description") ??
+      getMeta($, "og:description", "twitter:description", "description") ??
       "";
 
     const image =
-      getMeta(html, "og:image", "og:image:secure_url", "twitter:image") ?? null;
+      getMeta($, "og:image", "og:image:secure_url", "twitter:image") ?? null;
 
     const siteName =
-      getMeta(html, "og:site_name") ??
+      getMeta($, "og:site_name") ??
       (() => {
         try {
           return new URL(url).hostname;
@@ -165,10 +199,10 @@ async function _doFetchOgp(url) {
       })();
 
     result = {
-      title: decodeHtmlEntities(title),
-      description: decodeHtmlEntities(description),
+      title: he.decode(title),
+      description: he.decode(description),
       image,
-      siteName: decodeHtmlEntities(siteName),
+      siteName: he.decode(siteName),
     };
   } catch {
     result = null;
@@ -275,7 +309,7 @@ function isCardLine(line) {
     m[0].type === "text" &&
     m[0].value === "@" &&
     m[1].type === "link" && // remote URLs or local site paths
-    (/^https?:\/\//.test(m[1].url) || /^\//.test(m[1].url))
+    (m[1].url.startsWith("http") || m[1].url.startsWith("/"))
   );
 }
 
@@ -291,8 +325,11 @@ function getCardInfo(line) {
 }
 
 function resolveUrlForOgp(url) {
-  if (/^\//.test(url)) {
-    return `${SITE_ORIGIN.replace(/\/$/, "")}${url}`;
+  if (url.startsWith("/")) {
+    const origin = SITE_ORIGIN.endsWith("/")
+      ? SITE_ORIGIN.slice(0, -1)
+      : SITE_ORIGIN;
+    return `${origin}${url}`;
   }
   return url;
 }
@@ -344,12 +381,20 @@ export default function remarkLinkCard() {
         for (const seg of segments) {
           if (seg.type === "card") {
             flushText();
-            const isRemote = /^https?:\/\//.test(seg.url);
-            const isLocal = /^\//.test(seg.url);
+            const isRemote = seg.url.startsWith("http");
+            const isLocal = seg.url.startsWith("/");
 
-            const ogpUrl = isLocal ? resolveUrlForOgp(seg.url) : seg.url;
-            const shouldFetch = isRemote || (isLocal && SITE_ORIGIN);
-            const ogp = shouldFetch ? await fetchOgp(ogpUrl) : null;
+            let ogp;
+            if (isLocal) {
+              // ローカル記事はファイルシステムから直接取得（HTTP 不要）
+              ogp = resolveLocalArticle(seg.url);
+              if (!ogp && SITE_ORIGIN) {
+                // ファイルが見つからない場合は HTTP フォールバック
+                ogp = await fetchOgp(resolveUrlForOgp(seg.url));
+              }
+            } else {
+              ogp = await fetchOgp(seg.url);
+            }
 
             replacements.push(buildCard(ogp, seg.url, seg.label));
           } else if (seg.hasContent) {
