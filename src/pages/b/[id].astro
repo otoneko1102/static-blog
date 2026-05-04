@@ -10,7 +10,7 @@ export async function getStaticPaths() {
 }
 
 const { post } = Astro.props;
-const redirectUrl = `/blog/${post.id}`;
+const redirectUrl = `/article/${post.id}`;
 ---
 
 <!doctype html>
