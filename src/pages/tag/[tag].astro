@@ -55,7 +55,7 @@ const { tag, posts } = Astro.props as {
           posts.map((post) => (
             <li>
               <a
-                href={`/blog/${post.id}`}
+                href={`/article/${post.id}`}
                 class={`article-card ${post.data.pinned ? "pinned" : ""}`}
               >
                 {post.data.pinned && (
