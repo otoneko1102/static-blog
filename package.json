@@ -3,7 +3,8 @@
   "type": "module",
   "version": "0.0.1",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.12.0",
+    "pnpm": ">=10.32.0"
   },
   "scripts": {
     "dev": "astro dev",
@@ -24,6 +25,7 @@
     "fs-extra": "^11.3.4",
     "gray-matter": "^4.0.3",
     "he": "^1.2.0",
+    "katex": "^0.16.45",
     "mermaid": "^11.13.0",
     "rehype-katex": "^7.0.1",
     "remark-breaks": "^4.0.0",
