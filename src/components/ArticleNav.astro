@@ -11,7 +11,7 @@ const { prevPost, nextPost } = Astro.props;
   (prevPost || nextPost) && (
     <nav class="article-nav">
       {prevPost ? (
-        <a href={`/blog/${prevPost.id}`}>
+        <a href={`/article/${prevPost.id}`}>
           <div class="nav-label">
             <iconify-icon
               icon="material-symbols:arrow-back"
@@ -27,7 +27,7 @@ const { prevPost, nextPost } = Astro.props;
         <div />
       )}
       {nextPost ? (
-        <a href={`/blog/${nextPost.id}`} class="nav-next">
+        <a href={`/article/${nextPost.id}`} class="nav-next">
           <div class="nav-label">
             次の記事
             <iconify-icon

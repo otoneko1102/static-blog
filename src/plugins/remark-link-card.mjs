@@ -1,7 +1,7 @@
 /**
  * remark: @[](url) 構文で OGP リンクカードを埋め込み
  * ビルド時に OGP メタデータを取得してリッチカードを生成。
- * ローカル記事リンク (/blog/xxx) はファイルシステムから直接読み取り。
+ * ローカル記事リンク (/article/xxx) はファイルシステムから直接読み取り。
  */
 import fs from "fs";
 import path from "path";
@@ -52,20 +52,20 @@ function resolveSiteTitle() {
 const SITE_TITLE_VALUE = resolveSiteTitle();
 
 /**
- * ローカルの /blog/{slug} パスから記事メタデータを直接取得。
+ * ローカルの /article/{slug} パスから記事メタデータを直接取得。
  * HTTP 不要で GitHub Actions 上でも確実に動作。
  */
 function resolveLocalArticle(localPath) {
   if (localArticleCache.has(localPath)) return localArticleCache.get(localPath);
 
-  // /blog/{slug} or /blog/{slug}/ からスラッグを抽出
-  const slugMatch = localPath.match(/^\/blog\/([^/]+)\/?$/);
+  // /article/{slug} or /article/{slug}/ からスラッグを抽出
+  const slugMatch = localPath.match(/^\/(article|blog)\/([^/]+)\/?$/);
   if (!slugMatch) {
     localArticleCache.set(localPath, null);
     return null;
   }
 
-  const slug = slugMatch[1];
+  const slug = slugMatch[2];
   const contentDir = path.resolve(process.cwd(), "src/content/blog");
 
   // .mdx or .md を探す

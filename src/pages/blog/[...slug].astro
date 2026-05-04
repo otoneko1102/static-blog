@@ -1,31 +1,30 @@
 ---
-import { getCollection, render } from "astro:content";
-import BlogPost from "../../layouts/BlogPost.astro";
+import { getCollection } from "astro:content";
 
 export async function getStaticPaths() {
   const posts = await getCollection("blog");
-  return (
-    posts
-      .filter((post) => !post.data.hidden)
-      .map((post) => ({
-        params: { slug: post.id },
-        props: { post },
-      }))
-  );
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
 }
 
 const { post } = Astro.props;
-const { Content } = await render(post);
+const redirectUrl = `/article/${post.id}`;
 ---
 
-<BlogPost
-  id={post.id}
-  title={post.data.title}
-  description={post.data.description}
-  pubDate={post.data.pubDate}
-  updatedDate={post.data.updatedDate}
-  tags={post.data.tags}
-  heroImage={post.data.heroImage}
->
-  <Content />
-</BlogPost>
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="refresh" content={`0;url=${redirectUrl}`} />
+    <link rel="canonical" href={redirectUrl} />
+    <title>リダイレクト中...</title>
+    <script is:inline define:vars={{ redirectUrl }}>
+      window.location.replace(redirectUrl);
+    </script>
+  </head>
+  <body>
+    <p>リダイレクト中... <a href={redirectUrl}>こちらをクリック</a></p>
+  </body>
+</html>
