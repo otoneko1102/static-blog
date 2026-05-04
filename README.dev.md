@@ -7,14 +7,14 @@
 ## 0. 前提
 
 - **Node.js** ≥ 22.12.0
-- **npm**
+- **pnpm**
 - GitHub Pages でのデプロイを想定（`.github/workflows/deploy.yml` 同梱）
 
 ```bash
-npm install
-npm run dev     # ローカル開発サーバー
-npm run build   # 静的ビルド（dist/）
-npm run preview # ビルド結果のプレビュー
+pnpm install
+pnpm dev     # ローカル開発サーバー
+pnpm build   # 静的ビルド（dist/）
+pnpm preview # ビルド結果のプレビュー
 ```
 
 ---
@@ -112,7 +112,7 @@ About ページは `consts.ts` の定数（`AUTHOR_NAME`、`AUTHOR_BIO`、各URL
 ### 新しい記事を作成
 
 ```bash
-npm run new
+pnpm new
 ```
 
 対話形式で記事 ID・タイトル・タグなどを入力すると、`src/content/blog/<id>.mdx` と `public/files/<id>/` が自動生成されます。

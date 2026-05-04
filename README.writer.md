@@ -8,7 +8,7 @@
 ## 記事の作成
 
 ```bash
-npm run new
+pnpm new
 ```
 
 対話形式で記事 ID、タイトル、タグなどを入力すると `src/content/blog/<id>.mdx` と `public/files/<id>/` が自動生成されます。
@@ -317,7 +317,7 @@ import { TwitterEmbed } from "../components/i/TwitterEmbed.astro";
 ## 画像ファイルの配置
 
 記事に使う画像やメディアファイルは `public/files/<記事ID>/` ディレクトリに配置します。
-`npm run new` で記事を作成すると、このディレクトリも自動で作成されます。
+`pnpm new` で記事を作成すると、このディレクトリも自動で作成されます。
 
 ```
 public/files/my-article/
