@@ -6,8 +6,8 @@
 
 ## 0. 前提
 
-- **Node.js** ≥ 22.12.0
-- **pnpm**
+- **Node.js** 22.12.0 以上
+- **pnpm** 10.32.0 以上
 - GitHub Pages でのデプロイを想定（`.github/workflows/deploy.yml` 同梱）
 
 ```bash
