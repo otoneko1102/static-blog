@@ -15,11 +15,11 @@
     "new": "node scripts/create-article.mjs"
   },
   "dependencies": {
-    "@astrojs/mdx": "^5.0.0",
-    "@astrojs/rss": "^4.0.17",
-    "@astrojs/sitemap": "^3.7.1",
+    "@astrojs/mdx": "^5.0.6",
+    "@astrojs/rss": "^4.0.18",
+    "@astrojs/sitemap": "^3.7.2",
     "@iconify-json/material-symbols": "^1.2.62",
-    "astro": "^6.0.4",
+    "astro": "^6.3.6",
     "astro-icon": "^1.1.5",
     "cheerio": "^1.2.0",
     "fs-extra": "^11.3.4",
