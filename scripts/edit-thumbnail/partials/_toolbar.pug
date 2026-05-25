@@ -1,0 +1,44 @@
+include _icon.pug
+
+mixin tool-btn(id, iconName, label, title)
+  button.btn(id=id type="button" disabled title=title)
+    +icon(iconName)
+    span.btn-label= label
+
+mixin tool-btn-icon(id, iconName, title)
+  button.btn.btn-icon-only(id=id type="button" disabled title=title)
+    +icon(iconName)
+
+.toolbar(role="toolbar" aria-label="編集ツール")
+  label.btn.file-label(title="新しい画像を読み込み (元画像も置き換わります)")
+    +icon("folder_open")
+    span.btn-label 画像を読み込み
+    input(type="file" id="fileInput" accept="image/png,image/jpeg,image/webp")
+
+  span.sep(role="separator")
+
+  +tool-btn("rotateL", "rotate_left", "90°", "左に90°回転")
+  +tool-btn("rotateR", "rotate_right", "90°", "右に90°回転")
+  +tool-btn("flipH",   "swap_horiz",  "水平", "水平反転")
+  +tool-btn("flipV",   "swap_vert",   "垂直", "垂直反転")
+
+  span.sep(role="separator")
+
+  +tool-btn("zoomIn",  "zoom_in",  "ズーム", "拡大")
+  +tool-btn("zoomOut", "zoom_out", "ズーム", "縮小")
+
+  span.sep(role="separator")
+
+  .nudge-pad(role="group" aria-label="1pxずつ移動")
+    +tool-btn-icon("nudgeUp",    "keyboard_arrow_up",    "上に1px (↑ / Shift+↑ で 10px)")
+    +tool-btn-icon("nudgeLeft",  "keyboard_arrow_left",  "左に1px (← / Shift+← で 10px)")
+    +tool-btn-icon("nudgeDown",  "keyboard_arrow_down",  "下に1px (↓ / Shift+↓ で 10px)")
+    +tool-btn-icon("nudgeRight", "keyboard_arrow_right", "右に1px (→ / Shift+→ で 10px)")
+
+  +tool-btn("reset",   "restart_alt", "リセット", "トリミング枠と変形をリセット (0キー)")
+
+  span.spacer
+
+  button.btn.primary#save(type="button" disabled title="保存 (Ctrl+S)")
+    +icon("save")
+    span.btn-label 保存

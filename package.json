@@ -12,7 +12,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "format": "prettier --write ./src/",
-    "new": "node scripts/create-article.mjs"
+    "new": "node scripts/create-article.mjs",
+    "image": "node scripts/edit-thumbnail.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.6",

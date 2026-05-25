@@ -1,0 +1,13 @@
+include _icon.pug
+
+if hasSource
+  #stage.stage
+    .container
+      img#image(alt="編集中の画像" src=initialDataUrl)
+else
+  #stage.stage.is-empty
+    +icon("image", "stage-empty-icon")
+    p.stage-empty-text まだ画像がアップロードされていません。
+    p.stage-empty-hint
+      +icon("folder_open", "inline-icon")
+      | &nbsp;「画像を読み込み」から画像を選択してください。
