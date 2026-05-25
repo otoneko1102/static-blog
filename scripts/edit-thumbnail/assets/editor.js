@@ -4,7 +4,7 @@
     targetHeight: TARGET_HEIGHT,
     hasSource: SSR_HAS_SOURCE,
     initialFilename: SSR_FILENAME,
-  } = window.__EDITOR_CONFIG__;
+  } = JSON.parse(document.getElementById("editor-config").textContent);
   const ASPECT = TARGET_WIDTH / TARGET_HEIGHT;
   const VALID_EXTS = [".png", ".jpg", ".jpeg", ".webp"];
 
@@ -51,11 +51,7 @@
   function showStatus(msg, type) {
     statusEl.replaceChildren();
     const iconName =
-      type === "success"
-        ? "check_circle"
-        : type === "error"
-          ? "error"
-          : "info";
+      type === "success" ? "check_circle" : type === "error" ? "error" : "info";
     statusEl.appendChild(makeStatusIcon(iconName));
     const text = document.createElement("span");
     text.textContent = msg;

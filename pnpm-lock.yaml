@@ -66,6 +66,9 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0
     devDependencies:
+      '@prettier/plugin-pug':
+        specifier: ^3.4.2
+        version: 3.4.2(prettier@3.8.1)
       cropperjs:
         specifier: ^1.6.2
         version: 1.6.2
@@ -509,6 +512,12 @@ packages:
 
   '@oslojs/encoding@1.1.0':
     resolution: {integrity: sha512-70wQhgYmndg4GCPxPPxPGevRKqTIJ2Nh4OkiMWmDAVYsTQ+Ta7Sq+rPevXyXGdzr30/qZBnyOalCszoMxlyldQ==}
+
+  '@prettier/plugin-pug@3.4.2':
+    resolution: {integrity: sha512-/VOVeIscKYlPpsZrjrRV+44ZftCEIJq9Z/zR8PtAz/EDv82TKscw3z+fhTVqRz68G1TqQ/5COMFUVfPwPBH90w==}
+    engines: {node: '>=20.0.0', npm: '>=10.0.0'}
+    peerDependencies:
+      prettier: ^3.0.0
 
   '@rollup/pluginutils@5.3.0':
     resolution: {integrity: sha512-5EdhGZtnu3V88ces7s53hhfK5KSASnJZv8Lulpc04cWO3REESroJXg73DFsOmgbU2BhwV0E20bu2IDZb3VKW4Q==}
@@ -2995,6 +3004,11 @@ snapshots:
   '@nodable/entities@2.1.0': {}
 
   '@oslojs/encoding@1.1.0': {}
+
+  '@prettier/plugin-pug@3.4.2(prettier@3.8.1)':
+    dependencies:
+      prettier: 3.8.1
+      pug-lexer: 5.0.1
 
   '@rollup/pluginutils@5.3.0(rollup@4.59.0)':
     dependencies:

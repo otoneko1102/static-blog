@@ -160,7 +160,10 @@ function removeOtherThumbnails(articleDir, keepExt) {
 const STATIC_ROUTES = {
   "/cropper.css": [cropperCssPath, "text/css; charset=utf-8"],
   "/cropper.js": [cropperJsPath, "application/javascript; charset=utf-8"],
-  "/editor.css": [path.join(assetsDir, "editor.css"), "text/css; charset=utf-8"],
+  "/editor.css": [
+    path.join(assetsDir, "editor.css"),
+    "text/css; charset=utf-8",
+  ],
   "/editor.js": [
     path.join(assetsDir, "editor.js"),
     "application/javascript; charset=utf-8",
@@ -202,6 +205,12 @@ async function main() {
           initialDataUrl = `data:${extToMime(ext)};base64,${buf.toString("base64")}`;
           initialFilename = path.basename(found);
         }
+        const configJson = JSON.stringify({
+          targetWidth: TARGET_WIDTH,
+          targetHeight: TARGET_HEIGHT,
+          hasSource,
+          initialFilename,
+        }).replace(/</g, "\\u003c");
         const html = compileLayout({
           articleId: id,
           targetWidth: TARGET_WIDTH,
@@ -209,6 +218,7 @@ async function main() {
           hasSource,
           initialDataUrl,
           initialFilename,
+          configJson,
         });
         res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
         res.end(html);

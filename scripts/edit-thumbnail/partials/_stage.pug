@@ -3,7 +3,7 @@ include _icon.pug
 if hasSource
   #stage.stage
     .container
-      img#image(alt="編集中の画像" src=initialDataUrl)
+      img#image(alt="編集中の画像", src=initialDataUrl)
 else
   #stage.stage.is-empty
     +icon("image", "stage-empty-icon")

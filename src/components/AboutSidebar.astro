@@ -1,5 +1,11 @@
 ---
-import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL, AUTHOR_NAME, AUTHOR_BIO } from "../consts";
+import {
+  GITHUB_URL,
+  TWITTER_HANDLE,
+  PORTFOLIO_URL,
+  AUTHOR_NAME,
+  AUTHOR_BIO,
+} from "../consts";
 ---
 
 <aside class="about-sidebar" id="about-sidebar" aria-label="プロフィール">
@@ -57,7 +63,8 @@ import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL, AUTHOR_NAME, AUTHOR_BIO } fr
       このブログについて
     </div>
     <p class="about-sidebar-section-body">
-      Astro + MDX + JS Plugins で構築した静的ブログです。GitHub Actions でビルドし、GitHub Pages で公開しています。
+      Astro + MDX + JS Plugins で構築した静的ブログです。GitHub Actions
+      でビルドし、GitHub Pages で公開しています。
     </p>
     <p class="about-sidebar-section-body">
       記事・画像などは <a
@@ -208,9 +215,7 @@ import { GITHUB_URL, TWITTER_HANDLE, PORTFOLIO_URL, AUTHOR_NAME, AUTHOR_BIO } fr
   ) as HTMLElement | null;
 
   function adjustTop() {
-    const header = document.querySelector(
-      ".site-header",
-    ) as HTMLElement | null;
+    const header = document.querySelector(".site-header") as HTMLElement | null;
     const banner = document.querySelector(".site-banner") as HTMLElement | null;
     if (!sidebar || !header) return;
     const headerH = header.offsetHeight;

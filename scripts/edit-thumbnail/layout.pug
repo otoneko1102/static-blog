@@ -2,29 +2,23 @@ doctype html
 html(lang="ja")
   head
     meta(charset="UTF-8")
-    meta(name="viewport" content="width=device-width, initial-scale=1")
-    title サムネイル編集 — #{articleId}
-    link(rel="preconnect" href="https://fonts.googleapis.com")
-    link(rel="preconnect" href="https://fonts.gstatic.com" crossorigin)
+    meta(name="viewport", content="width=device-width, initial-scale=1")
+    title サムネイル編集 — #{ articleId }
+    link(rel="preconnect", href="https://fonts.googleapis.com")
+    link(rel="preconnect", href="https://fonts.gstatic.com", crossorigin)
     link(
-      rel="stylesheet"
+      rel="stylesheet",
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,-50..200"
     )
-    link(rel="stylesheet" href="/cropper.css")
-    link(rel="stylesheet" href="/editor.css")
+    link(rel="stylesheet", href="/cropper.css")
+    link(rel="stylesheet", href="/editor.css")
   body
     include partials/_header.pug
     main.main
       include partials/_toolbar.pug
       include partials/_stage.pug
-      #status.status(role="status" aria-live="polite")
+      #status.status(role="status", aria-live="polite")
       include partials/_hint.pug
+    script#editor-config(type="application/json")!= configJson
     script(src="/cropper.js")
-    script.
-      window.__EDITOR_CONFIG__ = {
-        targetWidth: #{targetWidth},
-        targetHeight: #{targetHeight},
-        hasSource: !{JSON.stringify(hasSource)},
-        initialFilename: !{JSON.stringify(initialFilename)}
-      };
     script(src="/editor.js")

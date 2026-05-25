@@ -150,14 +150,14 @@ export default function remarkUnderline() {
     const MISPAIR_PATTERNS = [
       {
         nodeType: "strong",
-        openRe:  /^([\s\S]*)\*\*([^*\n]+)$/,
+        openRe: /^([\s\S]*)\*\*([^*\n]+)$/,
         closeRe: /^([^*\n]+?)\*\*([\s\S]*)$/,
         tag: "strong",
         skip: (s) => s.data?.hName === "u",
       },
       {
         nodeType: "delete",
-        openRe:  /^([\s\S]*)~~([^~\n]+)$/,
+        openRe: /^([\s\S]*)~~([^~\n]+)$/,
         closeRe: /^([^~\n]+?)~~([\s\S]*)$/,
         tag: "del",
         skip: () => false,
@@ -165,7 +165,7 @@ export default function remarkUnderline() {
       {
         // Single * italic
         nodeType: "emphasis",
-        openRe:  /^([\s\S]*)(?<!\*)\*(?!\*)([^*\n]+)$/,
+        openRe: /^([\s\S]*)(?<!\*)\*(?!\*)([^*\n]+)$/,
         closeRe: /^([^*\n]+?)(?<!\*)\*(?!\*)([\s\S]*)$/,
         tag: "em",
         skip: () => false,
@@ -173,7 +173,7 @@ export default function remarkUnderline() {
       {
         // Single _ italic
         nodeType: "emphasis",
-        openRe:  /^([\s\S]*)(?<!_)_(?!_)([^_\n]+)$/,
+        openRe: /^([\s\S]*)(?<!_)_(?!_)([^_\n]+)$/,
         closeRe: /^([^_\n]+?)(?<!_)_(?!_)([\s\S]*)$/,
         tag: "em",
         skip: () => false,
@@ -182,18 +182,19 @@ export default function remarkUnderline() {
 
     for (const { nodeType, openRe, closeRe, tag, skip } of MISPAIR_PATTERNS) {
       visit(tree, (node) => {
-        if (!BLOCK_TYPES.has(node.type) || !Array.isArray(node.children)) return;
+        if (!BLOCK_TYPES.has(node.type) || !Array.isArray(node.children))
+          return;
 
         const kids = node.children;
         let i = 0;
         while (i + 2 < kids.length) {
           const t1 = kids[i];
-          const s  = kids[i + 1];
+          const s = kids[i + 1];
           const t2 = kids[i + 2];
 
           if (
             t1.type !== "text" ||
-            s.type  !== nodeType ||
+            s.type !== nodeType ||
             t2.type !== "text" ||
             skip(s)
           ) {
@@ -206,23 +207,35 @@ export default function remarkUnderline() {
           // t2 must start with content<delim>
           const closeMatch = t2.value.match(closeRe);
 
-          if (!openMatch || !closeMatch) { i++; continue; }
+          if (!openMatch || !closeMatch) {
+            i++;
+            continue;
+          }
 
-          const [, beforeOpen, openContent]  = openMatch;
+          const [, beforeOpen, openContent] = openMatch;
           const [, closeContent, afterClose] = closeMatch;
 
           // 誤マークされた span をプレーン HTML に
           const wrongHtml = (s.children ?? []).map(serializeInline).join("");
 
           const esc = (str) =>
-            str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            str
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;");
 
           const replacement = [];
-          if (beforeOpen)  replacement.push({ type: "text", value: beforeOpen });
-          replacement.push({ type: "html", value: `<${tag}>${esc(openContent)}</${tag}>` });
-          if (wrongHtml)   replacement.push({ type: "html", value: wrongHtml });
-          replacement.push({ type: "html", value: `<${tag}>${esc(closeContent)}</${tag}>` });
-          if (afterClose)  replacement.push({ type: "text", value: afterClose });
+          if (beforeOpen) replacement.push({ type: "text", value: beforeOpen });
+          replacement.push({
+            type: "html",
+            value: `<${tag}>${esc(openContent)}</${tag}>`,
+          });
+          if (wrongHtml) replacement.push({ type: "html", value: wrongHtml });
+          replacement.push({
+            type: "html",
+            value: `<${tag}>${esc(closeContent)}</${tag}>`,
+          });
+          if (afterClose) replacement.push({ type: "text", value: afterClose });
 
           kids.splice(i, 3, ...replacement);
         }

@@ -182,8 +182,7 @@ async function _doFetchOgp(url) {
       ($("title").first().text().trim() || url);
 
     const description =
-      getMeta($, "og:description", "twitter:description", "description") ??
-      "";
+      getMeta($, "og:description", "twitter:description", "description") ?? "";
 
     const image =
       getMeta($, "og:image", "og:image:secure_url", "twitter:image") ?? null;

@@ -11,7 +11,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "format": "prettier --write ./src/",
+    "format": "prettier --write ./src/ ./scripts/",
     "new": "node scripts/create-article.mjs",
     "image": "node scripts/edit-thumbnail.mjs"
   },
@@ -37,6 +37,7 @@
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {
+    "@prettier/plugin-pug": "^3.4.2",
     "cropperjs": "^1.6.2",
     "prettier": "^3.8.1",
     "prettier-plugin-astro": "^0.14.1",

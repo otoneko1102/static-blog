@@ -117,7 +117,11 @@ async function main() {
     console.log(`- 記事ファイル: ${outFile}`);
     console.log(`- 資料フォルダ: ${publicDir}`);
 
-    const createBranchAnswer = (await question("この記事用のブランチを作成してチェックアウトしますか？ (Y/n): ")).trim();
+    const createBranchAnswer = (
+      await question(
+        "この記事用のブランチを作成してチェックアウトしますか？ (Y/n): ",
+      )
+    ).trim();
     if (createBranchAnswer === "" || /^y(es)?$/i.test(createBranchAnswer)) {
       try {
         // Ensure we are in the repo root
