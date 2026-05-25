@@ -6,8 +6,13 @@ import { SITE_TITLE } from "../../consts";
 import fs from "node:fs";
 import path from "node:path";
 
+const TARGET_WIDTH = 1200;
+const TARGET_HEIGHT = 630;
+const VALID_EXTS = [".png", ".jpg", ".jpeg", ".webp"] as const;
+
 let fontData: ArrayBuffer | null = null;
-let thumbnailDataUri: string | null = null;
+const thumbnailCache = new Map<string, string>();
+let defaultThumbnailDataUri: string | null = null;
 
 async function loadFont(): Promise<ArrayBuffer> {
   if (fontData) return fontData;
@@ -16,12 +21,48 @@ async function loadFont(): Promise<ArrayBuffer> {
   return fontData;
 }
 
-function loadThumbnail(): string {
-  if (thumbnailDataUri) return thumbnailDataUri;
+function findCustomThumbnail(slug: string): string | null {
+  const dir = path.resolve("public", "files", slug);
+  for (const ext of VALID_EXTS) {
+    const p = path.join(dir, `_thumbnail${ext}`);
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+function loadDefaultThumbnail(): string {
+  if (defaultThumbnailDataUri) return defaultThumbnailDataUri;
   const thumbPath = path.resolve("public/thumbnail.png");
   const buf = fs.readFileSync(thumbPath);
-  thumbnailDataUri = `data:image/png;base64,${buf.toString("base64")}`;
-  return thumbnailDataUri;
+  defaultThumbnailDataUri = `data:image/png;base64,${buf.toString("base64")}`;
+  return defaultThumbnailDataUri;
+}
+
+async function loadThumbnail(slug: string): Promise<string> {
+  const cached = thumbnailCache.get(slug);
+  if (cached) return cached;
+
+  const customPath = findCustomThumbnail(slug);
+  if (!customPath) {
+    const uri = loadDefaultThumbnail();
+    thumbnailCache.set(slug, uri);
+    return uri;
+  }
+
+  const meta = await sharp(customPath).metadata();
+  if (meta.width !== TARGET_WIDTH || meta.height !== TARGET_HEIGHT) {
+    const rel = path.relative(process.cwd(), customPath).replace(/\\/g, "/");
+    throw new Error(
+      `[og:${slug}] カスタムサムネイルのサイズが不正です: ${rel}\n` +
+        `  実際: ${meta.width}×${meta.height} px / 期待: ${TARGET_WIDTH}×${TARGET_HEIGHT} px\n` +
+        `  → \`pnpm image ${slug}\` で編集して保存し直してください。`,
+    );
+  }
+
+  const png = await sharp(customPath).png().toBuffer();
+  const uri = `data:image/png;base64,${png.toString("base64")}`;
+  thumbnailCache.set(slug, uri);
+  return uri;
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
@@ -30,14 +71,14 @@ export const getStaticPaths: GetStaticPaths = async () => {
     .filter((post) => !post.data.hidden)
     .map((post) => ({
       params: { slug: post.id },
-      props: { title: post.data.title },
+      props: { title: post.data.title, slug: post.id },
     }));
 };
 
 export const GET: APIRoute = async ({ props }) => {
-  const { title } = props as { title: string };
+  const { title, slug } = props as { title: string; slug: string };
   const font = await loadFont();
-  const bgImage = loadThumbnail();
+  const bgImage = await loadThumbnail(slug);
 
   const svg = await satori(
     {
