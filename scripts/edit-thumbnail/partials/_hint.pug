@@ -1,0 +1,27 @@
+include _icon.pug
+
+.hint
+  p.hint-line
+    +icon("mouse", "inline-icon")
+    | &nbsp;
+    kbd ドラッグ
+    | &nbsp;でトリミング枠を移動・端を引っ張ってリサイズ。
+    kbd マウスホイール
+    | &nbsp;で画像をズーム。
+  p.hint-line
+    +icon("keyboard", "inline-icon")
+    | &nbsp;
+    kbd ←
+    kbd ↑
+    kbd ↓
+    kbd →
+    | &nbsp;で 1px 移動 /&nbsp;
+    kbd Shift
+    | + 矢印 で 10px 移動 /&nbsp;
+    kbd +
+    kbd -
+    | &nbsp;でズーム /&nbsp;
+    kbd 0
+    | &nbsp;でリセット /&nbsp;
+    kbd Ctrl+S
+    | &nbsp;で保存

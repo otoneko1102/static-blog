@@ -1,0 +1,10 @@
+include _icon.pug
+
+header.app-header
+  +icon("image", "app-icon")
+  h1.app-title サムネイル編集
+  span.badge= articleId
+  span.target
+    | 出力:&nbsp;
+    strong #{targetWidth} × #{targetHeight}
+    |  px (PNG)
