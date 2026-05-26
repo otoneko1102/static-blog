@@ -768,4 +768,6 @@
 
   // ---------- init ----------
   loadFiles().catch((err) => toast("読み込み失敗: " + err.message, "error"));
+
+  new EventSource("/api/events");
 })();

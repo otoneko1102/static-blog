@@ -336,4 +336,6 @@
   });
 
   initFromSSR();
+
+  new EventSource("/api/events");
 })();

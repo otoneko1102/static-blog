@@ -202,6 +202,9 @@ async function main() {
   );
   console.log(`[出力サイズ] ${TARGET_WIDTH} x ${TARGET_HEIGHT} px (PNG)`);
 
+  let sseClients = 0;
+  let shutdownTimer = null;
+
   const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, `http://${req.headers.host}`);
@@ -323,6 +326,30 @@ async function main() {
           `[save]   ${path.relative(rootDir, outPath).replace(/\\/g, "/")} (${png.length} bytes)`,
         );
         sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      if (req.method === "GET" && url.pathname === "/api/events") {
+        sseClients++;
+        if (shutdownTimer) { clearTimeout(shutdownTimer); shutdownTimer = null; }
+        res.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        });
+        res.write(": connected\n\n");
+        req.on("close", () => {
+          sseClients--;
+          if (sseClients === 0) {
+            shutdownTimer = setTimeout(() => {
+              if (sseClients === 0) {
+                console.log("\nタブが閉じられました。エディタを終了します。");
+                server.close(() => process.exit(0));
+                setTimeout(() => process.exit(0), 500).unref();
+              }
+            }, 2000);
+          }
+        });
         return;
       }
 
