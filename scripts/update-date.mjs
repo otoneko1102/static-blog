@@ -32,7 +32,7 @@ function resolveArticleId(explicit, field) {
   if (!branchId) {
     throw new Error(
       `記事IDが指定されておらず、現在のブランチも 'article/<id>' 形式ではありません。\n` +
-        `  使い方: pnpm date:${field === "pubDate" ? "pub" : "update"} <id>` +
+        `  使い方: pnpm date:${field === "pubDate" ? "pub" : "updated"} <id>` +
         `  または article/<id> ブランチに切り替えてください。`,
     );
   }
