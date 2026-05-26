@@ -17,8 +17,9 @@ html(lang="ja")
     main.main
       include partials/_toolbar.pug
       include partials/_stage.pug
-      #status.status(role="status", aria-live="polite")
       include partials/_hint.pug
+    include partials/_drop.pug
+    #toast.toast(role="status", aria-live="polite")
     script#editor-config(type="application/json")!= configJson
     script(src="/cropper.js")
     script(src="/editor.js")

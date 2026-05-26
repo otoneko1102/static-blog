@@ -13,7 +13,7 @@ mixin tool-btn-icon(id, iconName, title)
   label.btn.file-label(title="新しい画像を読み込み (元画像も置き換わります)")
     +icon("folder_open")
     span.btn-label 画像を読み込み
-    input#fileInput(type="file", accept="image/png,image/jpeg,image/webp")
+    input#fileInput(type="file", accept="image/*,.heic,.heif")
 
   span.sep(role="separator")
 

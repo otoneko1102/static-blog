@@ -34,7 +34,7 @@ const cropperJsPath = path.join(
 
 const TARGET_WIDTH = 1200;
 const TARGET_HEIGHT = 630;
-const VALID_EXTS = [".png", ".jpg", ".jpeg", ".webp"];
+const VALID_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".avif", ".gif", ".apng"];
 // 出力サイズ 1200×630 を連結。Astro (4321) など主要 dev サーバとも非衝突。
 const EDITOR_PORT = 12630;
 
@@ -63,7 +63,7 @@ function resolveArticleId(argv) {
   if (!branchId) {
     throw new Error(
       "記事IDが指定されておらず、現在のブランチも 'article/<id>' 形式ではありません。\n" +
-        "  使い方: pnpm image <id>  または  article/<id> ブランチに切り替えてください。",
+        "  使い方: pnpm thumbnail <id>  または  article/<id> ブランチに切り替えてください。",
     );
   }
   return branchId;
@@ -84,6 +84,9 @@ function extToMime(ext) {
       ".jpg": "image/jpeg",
       ".jpeg": "image/jpeg",
       ".webp": "image/webp",
+      ".avif": "image/avif",
+      ".gif": "image/gif",
+      ".apng": "image/apng",
     }[ext.toLowerCase()] || "application/octet-stream"
   );
 }
@@ -94,6 +97,7 @@ function mimeToExt(mime) {
       "image/png": ".png",
       "image/jpeg": ".jpg",
       "image/webp": ".webp",
+      "image/avif": ".avif",
     }[mime] || ".png"
   );
 }
@@ -129,6 +133,15 @@ function dataUrlToBuffer(dataUrl) {
   const m = String(dataUrl).match(/^data:([^;]+);base64,(.+)$/);
   if (!m) throw new Error("不正な dataURL です");
   return { mime: m[1], buffer: Buffer.from(m[2], "base64") };
+}
+
+function isHeic(buffer) {
+  if (buffer.length < 12) return false;
+  if (buffer.subarray(4, 8).toString("ascii") !== "ftyp") return false;
+  const brand = buffer.subarray(8, 12).toString("ascii");
+  return ["heic", "heix", "hevc", "hevx", "mif1", "msf1", "heim", "heis"].includes(
+    brand,
+  );
 }
 
 function openBrowser(url) {
@@ -253,13 +266,42 @@ async function main() {
         const { dataUrl, ext } = JSON.parse(body.toString("utf-8"));
         const { buffer, mime } = dataUrlToBuffer(dataUrl);
         const requested = (ext || "").toLowerCase();
-        const outExt = VALID_EXTS.includes(requested)
+
+        // HEIC/HEIF はブラウザでレンダリングできないので PNG に変換
+        const isHeicInput =
+          requested === ".heic" ||
+          requested === ".heif" ||
+          mime === "image/heic" ||
+          mime === "image/heif" ||
+          isHeic(buffer);
+
+        let outBuffer = buffer;
+        let outExt = VALID_EXTS.includes(requested)
           ? requested
           : mimeToExt(mime);
+        let convertedDataUrl = null;
+
+        if (isHeicInput) {
+          const heicConvert = (await import("heic-convert")).default;
+          const png = await heicConvert({ buffer, format: "PNG" });
+          outBuffer = Buffer.from(png);
+          outExt = ".png";
+          convertedDataUrl = `data:image/png;base64,${outBuffer.toString("base64")}`;
+        }
+
         removeOtherThumbnails(articleDir, outExt);
-        fs.writeFileSync(path.join(articleDir, `_thumbnail${outExt}`), buffer);
-        console.log(`[upload] _thumbnail${outExt} (${buffer.length} bytes)`);
-        sendJson(res, 200, { ok: true, ext: outExt });
+        fs.writeFileSync(
+          path.join(articleDir, `_thumbnail${outExt}`),
+          outBuffer,
+        );
+        console.log(
+          `[upload] _thumbnail${outExt} (${outBuffer.length} bytes${isHeicInput ? ", from HEIC" : ""})`,
+        );
+        sendJson(res, 200, {
+          ok: true,
+          ext: outExt,
+          dataUrl: convertedDataUrl,
+        });
         return;
       }
 
@@ -296,7 +338,7 @@ async function main() {
     if (err.code === "EADDRINUSE") {
       console.error(
         `\nエラー: ポート ${EDITOR_PORT} は既に使用されています。\n` +
-          `  ・別の \`pnpm image\` プロセスが起動中の可能性があります。\n` +
+          `  ・別の \`pnpm thumbnail\` プロセスが起動中の可能性があります。\n` +
           `  ・他のアプリで同じポートを使用している場合は、解放してから再実行してください。`,
       );
     } else {
