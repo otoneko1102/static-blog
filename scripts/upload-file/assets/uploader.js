@@ -24,8 +24,15 @@
   const dropOverlayEl = $("dropOverlay");
   const toastEl = $("toast");
   const editImageEl = $("editImage");
+  const moveBtnEl = $("moveBtn");
+  const moveDropdownEl = $("moveDropdown");
+  const mkdirBtnEl = $("mkdirBtn");
+  const renameExtEl = $("renameExt");
 
   let files = [];
+  let folders = [];
+  let folderFiles = {};
+  let expandedFolders = new Set();
   let selected = null;
   let mode = "preview"; // 'preview' | 'edit'
   let cropper = null;
@@ -98,56 +105,142 @@
   }
 
   // ---------- tree rendering ----------
+  function makeTreeItem(f, folder) {
+    const li = document.createElement("li");
+    li.className = `tree-item kind-${f.kind}${folder ? " tree-item-sub" : ""}`;
+    li.dataset.name = f.name;
+    if (folder) li.dataset.folder = folder;
+
+    const isActive =
+      selected &&
+      selected.name === f.name &&
+      (selected.folder || "") === folder &&
+      (!selected.articleId || selected.articleId === CONFIG.articleId);
+    if (isActive) li.classList.add("is-active");
+
+    const icon = document.createElement("span");
+    icon.className = "icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = iconForKind(f.kind, f.mime);
+    li.appendChild(icon);
+
+    const name = document.createElement("span");
+    name.className = "tree-item-name";
+    name.textContent = f.name;
+    name.title = f.name;
+    li.appendChild(name);
+
+    const size = document.createElement("span");
+    size.className = "tree-item-size";
+    size.textContent = formatSize(f.size);
+    li.appendChild(size);
+
+    li.addEventListener("click", () => selectFile(f.name, folder));
+    return li;
+  }
+
   function renderTree() {
     fileListEl.replaceChildren();
-    if (files.length === 0) {
+    if (files.length === 0 && folders.length === 0) {
       const li = document.createElement("li");
       li.className = "tree-empty";
       li.textContent = "(ファイルなし)";
       fileListEl.appendChild(li);
       return;
     }
-    for (const f of files) {
+
+    for (const folder of folders) {
+      const isExpanded = expandedFolders.has(folder.name);
+
       const li = document.createElement("li");
-      li.className = `tree-item kind-${f.kind}`;
-      li.dataset.name = f.name;
-      if (
-        selected &&
-        selected.name === f.name &&
-        (!selected.articleId || selected.articleId === CONFIG.articleId)
-      ) {
-        li.classList.add("is-active");
-      }
+      li.className = "tree-item tree-folder-item";
+      li.dataset.folder = folder.name;
+
+      const chevron = document.createElement("span");
+      chevron.className = `icon folder-chevron${isExpanded ? " is-expanded" : ""}`;
+      chevron.setAttribute("aria-hidden", "true");
+      chevron.textContent = "chevron_right";
+      li.appendChild(chevron);
 
       const icon = document.createElement("span");
       icon.className = "icon";
       icon.setAttribute("aria-hidden", "true");
-      icon.textContent = iconForKind(f.kind, f.mime);
+      icon.textContent = isExpanded ? "folder_open" : "folder";
       li.appendChild(icon);
 
-      const name = document.createElement("span");
-      name.className = "tree-item-name";
-      name.textContent = f.name;
-      name.title = f.name;
-      li.appendChild(name);
+      const nameEl = document.createElement("span");
+      nameEl.className = "tree-item-name";
+      nameEl.textContent = folder.name + "/";
+      li.appendChild(nameEl);
 
-      const size = document.createElement("span");
-      size.className = "tree-item-size";
-      size.textContent = formatSize(f.size);
-      li.appendChild(size);
+      const count = document.createElement("span");
+      count.className = "tree-item-size";
+      count.textContent = String(folder.fileCount);
+      li.appendChild(count);
 
-      li.addEventListener("click", () => selectFile(f.name));
+      li.addEventListener("click", () => toggleFolder(folder.name));
       fileListEl.appendChild(li);
+
+      if (isExpanded) {
+        for (const f of folderFiles[folder.name] ?? []) {
+          fileListEl.appendChild(makeTreeItem(f, folder.name));
+        }
+      }
+    }
+
+    for (const f of files) {
+      fileListEl.appendChild(makeTreeItem(f, ""));
     }
   }
 
-  async function loadFiles(preserveSelectedName) {
+  async function toggleFolder(folderName) {
+    if (expandedFolders.has(folderName)) {
+      expandedFolders.delete(folderName);
+      renderTree();
+      return;
+    }
+    expandedFolders.add(folderName);
+    if (!folderFiles[folderName]) {
+      renderTree();
+      try {
+        const data = await api(`/api/files?subfolder=${encodeURIComponent(folderName)}`);
+        folderFiles[folderName] = data.files;
+      } catch (err) {
+        expandedFolders.delete(folderName);
+        toast("フォルダの読み込みに失敗: " + err.message, "error");
+      }
+    }
+    renderTree();
+  }
+
+  async function loadFiles(preserveSelectedName, preserveSelectedFolder = "") {
     const data = await api("/api/files");
     files = data.files;
-    if (preserveSelectedName) {
-      const found = files.find((f) => f.name === preserveSelectedName);
-      if (found) selected = { ...found, articleId: CONFIG.articleId };
-      else selected = null;
+    folders = data.folders ?? [];
+    // フォルダキャッシュをリセット (展開済みのみ再取得)
+    const toRefresh = [...expandedFolders];
+    folderFiles = {};
+    for (const fn of toRefresh) {
+      try {
+        const d = await api(`/api/files?subfolder=${encodeURIComponent(fn)}`);
+        folderFiles[fn] = d.files;
+      } catch { expandedFolders.delete(fn); }
+    }
+
+    if (preserveSelectedName !== undefined) {
+      if (!preserveSelectedFolder) {
+        const found = files.find((f) => f.name === preserveSelectedName);
+        selected = found ? { ...found, folder: "", articleId: CONFIG.articleId } : null;
+      } else {
+        const subFiles = folderFiles[preserveSelectedFolder] ?? [];
+        const found = subFiles.find((f) => f.name === preserveSelectedName);
+        if (found) {
+          selected = { ...found, folder: preserveSelectedFolder, articleId: CONFIG.articleId };
+          expandedFolders.add(preserveSelectedFolder);
+        } else {
+          selected = null;
+        }
+      }
     }
     renderTree();
     if (selected) renderFileView();
@@ -155,10 +248,11 @@
   }
 
   // ---------- selection / view ----------
-  function selectFile(name) {
-    const f = files.find((x) => x.name === name);
+  function selectFile(name, folder = "") {
+    const pool = folder ? (folderFiles[folder] ?? []) : files;
+    const f = pool.find((x) => x.name === name);
     if (!f) return;
-    selected = { ...f, articleId: CONFIG.articleId };
+    selected = { ...f, folder, articleId: CONFIG.articleId };
     otherArticlesBodyEl
       .querySelectorAll(".tree-item.is-active")
       .forEach((el) => el.classList.remove("is-active"));
@@ -172,31 +266,37 @@
   }
 
   function renderFileView() {
-    if (!selected) {
-      showEmptyState();
-      return;
-    }
-    // 別ファイルに切り替えたら編集モードは破棄
+    if (!selected) { showEmptyState(); return; }
     if (mode === "edit") exitEditMode({ silent: true });
     emptyStateEl.hidden = true;
     fileViewEl.hidden = false;
 
-    const isMine =
-      !selected.articleId || selected.articleId === CONFIG.articleId;
+    const isMine = !selected.articleId || selected.articleId === CONFIG.articleId;
     const articleId = selected.articleId || CONFIG.articleId;
+    const folder = selected.folder || "";
+
+    // 拡張子を除いたベース名のみ入力欄に表示
+    const ext = selected.name.match(/(\.[^.]+)$/)?.[1] ?? "";
+    const base = selected.name.slice(0, selected.name.length - ext.length);
+    renameInputEl.value = base;
+    renameInputEl.readOnly = !isMine;
+    renameExtEl.textContent = ext;
 
     fileTypeIconEl.textContent = iconForKind(selected.kind, selected.mime);
-    renameInputEl.value = selected.name;
-    renameInputEl.readOnly = !isMine;
-    fileMetaEl.textContent = `${isMine ? "" : `[${articleId}] · `}${formatSize(selected.size)} / ${formatDate(selected.mtime)}`;
+    fileMetaEl.textContent = `${isMine ? "" : `[${articleId}] · `}${folder ? folder + "/" : ""}${formatSize(selected.size)} / ${formatDate(selected.mtime)}`;
     editBtnEl.hidden = selected.kind !== "image" || !isMine;
     renameBtnEl.hidden = !isMine;
     deleteBtnEl.hidden = !isMine;
+    moveBtnEl.hidden = !isMine || (folders.length === 0 && !folder);
 
-    const url = `/files/${articleId}/${encodeURIComponent(selected.name)}`;
-    const apiUrl = `/api/file?id=${encodeURIComponent(articleId)}&name=${encodeURIComponent(selected.name)}&_t=${Date.now()}`;
+    const filePath = folder ? `${folder}/${selected.name}` : selected.name;
+    const folderParam = folder ? `&folder=${encodeURIComponent(folder)}` : "";
+    const idParam = (selected.articleId && selected.articleId !== CONFIG.articleId)
+      ? `id=${encodeURIComponent(articleId)}&` : "";
+    const apiUrl = `/api/file?${idParam}name=${encodeURIComponent(selected.name)}${folderParam}&_t=${Date.now()}`;
+    const publicUrl = `/files/${articleId}/${filePath}`;
+
     previewAreaEl.replaceChildren();
-
     if (selected.kind === "image") {
       const img = document.createElement("img");
       img.src = apiUrl;
@@ -223,9 +323,7 @@
       previewAreaEl.appendChild(ph);
     }
 
-    // MD snippet (publish URL, not API URL)
-    const base = selected.name.replace(/\.[^.]+$/, "");
-    mdCodeEl.textContent = `![${base}](${url})`;
+    mdCodeEl.textContent = `![${base}](${publicUrl})`;
   }
 
   // ---------- upload ----------
@@ -290,29 +388,31 @@
     e.target.value = "";
   });
   $("refreshBtn").addEventListener("click", async () => {
-    await loadFiles(selected?.name);
+    await loadFiles(selected?.name, selected?.folder ?? "");
     toast("再読み込みしました", "info");
   });
 
   // ---------- rename ----------
   async function doRename() {
     if (!selected) return;
-    const to = renameInputEl.value.trim();
-    if (!to || to === selected.name) return;
+    const ext = selected.name.match(/(\.[^.]+)$/)?.[1] ?? "";
+    const inputBase = renameInputEl.value.trim();
+    const to = inputBase + ext;
+    if (!inputBase || to === selected.name) return;
+    const folder = selected.folder || "";
     try {
       const data = await api("/api/rename", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ from: selected.name, to }),
+        body: JSON.stringify({ from: selected.name, to, folder }),
       });
-      const note = data.changed
-        ? ` (「${data.requested}」を正規化)`
-        : "";
+      const note = data.changed ? ` (「${data.requested}」を正規化)` : "";
       toast(`リネーム: ${selected.name} → ${data.name}${note}`, "success");
-      await loadFiles(data.name);
+      await loadFiles(data.name, folder);
     } catch (err) {
       toast("リネーム失敗: " + err.message, "error");
-      renameInputEl.value = selected.name;
+      const curExt = selected.name.match(/(\.[^.]+)$/)?.[1] ?? "";
+      renameInputEl.value = selected.name.slice(0, selected.name.length - curExt.length);
     }
   }
   renameBtnEl.addEventListener("click", doRename);
@@ -322,7 +422,8 @@
       doRename();
     } else if (e.key === "Escape") {
       e.preventDefault();
-      renameInputEl.value = selected?.name || "";
+      const curExt = selected?.name.match(/(\.[^.]+)$/)?.[1] ?? "";
+      renameInputEl.value = selected ? selected.name.slice(0, selected.name.length - curExt.length) : "";
       renameInputEl.blur();
     }
   });
@@ -332,11 +433,12 @@
     if (!selected) return;
     if (selected.articleId && selected.articleId !== CONFIG.articleId) return;
     if (!confirm(`'${selected.name}' を削除します。よろしいですか?`)) return;
+    const folder = selected.folder || "";
     try {
       await api("/api/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: selected.name }),
+        body: JSON.stringify({ name: selected.name, folder }),
       });
       toast(`削除: ${selected.name}`, "success");
       selected = null;
@@ -375,7 +477,9 @@
   }
   function copyUrl() {
     if (!selected) return;
-    copyToClipboard(`${URL_PREFIX}/${selected.name}`);
+    const folder = selected.folder || "";
+    const filePath = folder ? `${folder}/${selected.name}` : selected.name;
+    copyToClipboard(`${URL_PREFIX}/${filePath}`);
   }
   $("copyMdBtn").addEventListener("click", copyMd);
   $("copyMdInlineBtn").addEventListener("click", copyMd);
@@ -449,7 +553,9 @@
         minContainerHeight: 400,
       });
     };
-    const apiUrl = `/api/file?name=${encodeURIComponent(selected.name)}&_t=${Date.now()}`;
+    const folder = selected.folder || "";
+    const folderParam = folder ? `&folder=${encodeURIComponent(folder)}` : "";
+    const apiUrl = `/api/file?name=${encodeURIComponent(selected.name)}${folderParam}&_t=${Date.now()}`;
     editImageEl.onload = start;
     editImageEl.src = apiUrl;
   }
@@ -478,21 +584,19 @@
       });
       if (!canvas) throw new Error("Canvas の生成に失敗しました");
       const dataUrl = canvas.toDataURL("image/png");
+      const folder = selected.folder || "";
       const data = await api("/api/save-edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: selected.name, dataUrl }),
+        body: JSON.stringify({ name: selected.name, dataUrl, folder }),
       });
-      toast(
-        `保存しました (${canvas.width}×${canvas.height} PNG)`,
-        "success",
-      );
+      toast(`保存しました (${canvas.width}×${canvas.height} PNG)`, "success");
       destroyCropper();
       editImageEl.removeAttribute("src");
       editModeEl.hidden = true;
       previewModeEl.hidden = false;
       mode = "preview";
-      await loadFiles(data.name);
+      await loadFiles(data.name, data.folder ?? folder);
     } catch (err) {
       toast("保存失敗: " + err.message, "error");
     } finally {
@@ -517,8 +621,17 @@
   editBtnEl.addEventListener("click", enterEditMode);
   $("editCancelBtn").addEventListener("click", () => exitEditMode());
   $("editSaveBtn").addEventListener("click", saveEdit);
-  $("editRotateL").addEventListener("click", () => cropper?.rotate(-90));
-  $("editRotateR").addEventListener("click", () => cropper?.rotate(90));
+  function rotateCropper(deg) {
+    if (!cropper) return;
+    cropper.rotate(deg);
+    // 回転後にトリミング枠をキャンバス全体にリセット（枠位置がずれたまま残るのを防ぐ）
+    requestAnimationFrame(() => {
+      const cd = cropper.getCanvasData();
+      cropper.setCropBoxData({ left: cd.left, top: cd.top, width: cd.width, height: cd.height });
+    });
+  }
+  $("editRotateL").addEventListener("click", () => rotateCropper(-90));
+  $("editRotateR").addEventListener("click", () => rotateCropper(90));
   $("editFlipH").addEventListener("click", () => {
     if (!cropper) return;
     editFlipX = -editFlipX;
@@ -765,6 +878,71 @@
       toast("その他の記事の読み込みに失敗: " + err.message, "error");
     }
   });
+
+  // ---------- フォルダ作成 ----------
+  mkdirBtnEl.addEventListener("click", async () => {
+    const name = prompt("フォルダ名 (半角英小文字・数字・ハイフン・アンダースコア):");
+    if (!name) return;
+    try {
+      await api("/api/mkdir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      toast(`フォルダ '${name}' を作成しました`, "success");
+      await loadFiles(selected?.name, selected?.folder ?? "");
+    } catch (err) {
+      toast("フォルダ作成失敗: " + err.message, "error");
+    }
+  });
+
+  // ---------- 移動 ----------
+  moveBtnEl.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (moveDropdownEl.hidden) {
+      const currentFolder = selected?.folder || "";
+      moveDropdownEl.replaceChildren();
+      const targets = [];
+      if (currentFolder) targets.push({ name: "", label: "(ルート)" });
+      for (const f of folders) {
+        if (f.name !== currentFolder) targets.push({ name: f.name, label: f.name + "/" });
+      }
+      if (targets.length === 0) {
+        toast("移動先がありません", "info");
+        return;
+      }
+      for (const t of targets) {
+        const btn = document.createElement("button");
+        btn.className = "move-option";
+        btn.type = "button";
+        btn.textContent = t.label;
+        btn.addEventListener("click", () => moveSelectedFile(t.name));
+        moveDropdownEl.appendChild(btn);
+      }
+      moveDropdownEl.hidden = false;
+    } else {
+      moveDropdownEl.hidden = true;
+    }
+  });
+  document.addEventListener("click", () => { moveDropdownEl.hidden = true; });
+
+  async function moveSelectedFile(targetFolder) {
+    moveDropdownEl.hidden = true;
+    if (!selected) return;
+    const folder = selected.folder || "";
+    try {
+      const data = await api("/api/move", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: selected.name, folder, targetFolder }),
+      });
+      const dest = targetFolder ? `${targetFolder}/` : "ルート";
+      toast(`移動しました → ${dest}`, "success");
+      await loadFiles(data.name, data.folder ?? targetFolder);
+    } catch (err) {
+      toast("移動失敗: " + err.message, "error");
+    }
+  }
 
   // ---------- init ----------
   loadFiles().catch((err) => toast("読み込み失敗: " + err.message, "error"));
