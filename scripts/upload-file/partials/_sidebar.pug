@@ -14,6 +14,11 @@ aside.sidebar(aria-label="ファイルツリー")
         accept="image/*,.heic,.heif,video/*,.mts,.m2ts,.ts,.flv,.wmv,.asf,.rm,.rmvb,audio/*,.wma,.aiff,.aif,.mid,.midi,.amr,.caf,application/pdf",
         multiple
       )
+    button.btn.btn-icon-only#mkdirBtn(
+      type="button",
+      title="新規フォルダを作成"
+    )
+      +icon("create_new_folder")
     button.btn.btn-icon-only#refreshBtn(
       type="button",
       title="再読み込み"

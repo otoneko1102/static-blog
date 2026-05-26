@@ -14,7 +14,8 @@
     "format": "prettier --write ./src/ ./scripts/",
     "new": "node scripts/create-article.mjs",
     "thumbnail": "node scripts/edit-thumbnail.mjs",
-    "file": "node scripts/upload-file.mjs"
+    "file": "node scripts/upload-file.mjs",
+    "comp": "node scripts/compress-files.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.6",

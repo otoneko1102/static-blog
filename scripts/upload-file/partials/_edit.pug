@@ -44,7 +44,8 @@ mixin edit-btn-icon(id, iconName, title)
       span.btn-label 保存
 
   .edit-canvas#editCanvas
-    img#editImage(alt="編集中の画像")
+    .edit-canvas-inner
+      img#editImage(alt="編集中の画像")
 
   p.edit-hint
     +icon("info", "inline-icon")

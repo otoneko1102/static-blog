@@ -14,13 +14,18 @@ main.main-pane#mainPane
             type="text",
             spellcheck="false",
             autocomplete="off",
-            aria-label="ファイル名"
+            aria-label="ファイル名 (拡張子除く)"
           )
+          span.rename-ext#renameExt
           button.btn.btn-sm#renameBtn(type="button", title="リネーム (Enter)")
             +icon("check")
             span.btn-label 適用
         .file-meta#fileMeta
         .toolbar-spacer
+        button.btn.btn-sm#moveBtn(type="button", title="フォルダに移動", hidden)
+          +icon("drive_file_move")
+          span.btn-label 移動
+        .move-dropdown#moveDropdown(hidden)
         button.btn.btn-sm#editBtn(type="button", title="画像を編集 (E)", hidden)
           +icon("crop")
           span.btn-label 編集
