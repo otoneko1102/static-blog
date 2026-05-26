@@ -8,7 +8,7 @@ import path from "node:path";
 
 const TARGET_WIDTH = 1200;
 const TARGET_HEIGHT = 630;
-const VALID_EXTS = [".png", ".jpg", ".jpeg", ".webp"] as const;
+const VALID_EXTS = [".png", ".jpg", ".jpeg", ".jpe", ".jfif", ".webp", ".avif", ".gif", ".apng", ".bmp", ".tif", ".tiff", ".heic", ".heif"] as const;
 
 let fontData: ArrayBuffer | null = null;
 const thumbnailCache = new Map<string, string>();
@@ -49,17 +49,26 @@ async function loadThumbnail(slug: string): Promise<string> {
     return uri;
   }
 
-  const meta = await sharp(customPath).metadata();
+  const ext = path.extname(customPath).toLowerCase();
+  let sharpInput: Buffer | string = customPath;
+  if (ext === ".heic" || ext === ".heif") {
+    const raw = fs.readFileSync(customPath);
+    const heicConvert = (await import("heic-convert")).default;
+    const converted = await heicConvert({ buffer: raw as any, format: "PNG" });
+    sharpInput = Buffer.from(converted as any);
+  }
+
+  const meta = await sharp(sharpInput).metadata();
   if (meta.width !== TARGET_WIDTH || meta.height !== TARGET_HEIGHT) {
     const rel = path.relative(process.cwd(), customPath).replace(/\\/g, "/");
     throw new Error(
       `[og:${slug}] カスタムサムネイルのサイズが不正です: ${rel}\n` +
         `  実際: ${meta.width}×${meta.height} px / 期待: ${TARGET_WIDTH}×${TARGET_HEIGHT} px\n` +
-        `  → \`pnpm image ${slug}\` で編集して保存し直してください。`,
+        `  → \`pnpm thumbnail ${slug}\` で編集して保存し直してください。`,
     );
   }
 
-  const png = await sharp(customPath).png().toBuffer();
+  const png = await sharp(sharpInput).png().toBuffer();
   const uri = `data:image/png;base64,${png.toString("base64")}`;
   thumbnailCache.set(slug, uri);
   return uri;
