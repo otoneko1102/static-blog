@@ -1,0 +1,38 @@
+include _icon.pug
+
+aside.sidebar(aria-label="ファイルツリー")
+  .sidebar-section-title
+    +icon("folder_open", "section-icon")
+    span EXPLORER
+  .sidebar-toolbar
+    label.btn.file-label(title="ファイルをアップロード")
+      +icon("upload")
+      span.btn-label アップロード
+      input(
+        type="file",
+        id="fileInput",
+        accept="image/*,.heic,.heif,video/*,.mts,.m2ts,.ts,.flv,.wmv,.asf,.rm,.rmvb,audio/*,.wma,.aiff,.aif,.mid,.midi,.amr,.caf,application/pdf",
+        multiple
+      )
+    button.btn.btn-icon-only#refreshBtn(
+      type="button",
+      title="再読み込み"
+    )
+      +icon("refresh")
+  .tree-root
+    .tree-folder
+      .tree-folder-row
+        +icon("folder", "tree-folder-icon")
+        span.tree-folder-name= articleId
+      ul.tree-list#fileList
+        li.tree-empty 読み込み中...
+
+  hr.sidebar-divider
+
+  button.sidebar-other-btn#otherArticlesToggle(type="button")
+    +icon("folder_special", "section-icon")
+    span.sidebar-other-label その他の記事
+    span.other-count-badge#otherCountBadge(hidden)
+    +icon("chevron_right", "other-chevron")
+
+  .other-articles-body#otherArticlesBody(hidden)

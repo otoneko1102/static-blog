@@ -3,7 +3,7 @@ html(lang="ja")
   head
     meta(charset="UTF-8")
     meta(name="viewport", content="width=device-width, initial-scale=1")
-    title サムネイル編集 — #{ articleId }
+    title ファイル管理 — #{ articleId }
     link(rel="preconnect", href="https://fonts.googleapis.com")
     link(rel="preconnect", href="https://fonts.gstatic.com", crossorigin)
     link(
@@ -11,15 +11,13 @@ html(lang="ja")
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,-50..200"
     )
     link(rel="stylesheet", href="/cropper.css")
-    link(rel="stylesheet", href="/editor.css")
+    link(rel="stylesheet", href="/uploader.css")
   body
     include partials/_header.pug
-    main.main
-      include partials/_toolbar.pug
-      include partials/_stage.pug
-      include partials/_hint.pug
-    include partials/_drop.pug
+    .app-body
+      include partials/_sidebar.pug
+      include partials/_main.pug
     #toast.toast(role="status", aria-live="polite")
-    script#editor-config(type="application/json")!= configJson
+    script#uploader-config(type="application/json")!= configJson
     script(src="/cropper.js")
-    script(src="/editor.js")
+    script(src="/uploader.js")

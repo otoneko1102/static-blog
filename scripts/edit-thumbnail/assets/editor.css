@@ -217,33 +217,83 @@ body {
   max-width: 100%;
 }
 
-/* ---------- status ---------- */
-.status {
-  margin-top: 14px;
-  padding: 10px 14px;
+/* ---------- toast (floating notification) ---------- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg-2);
+  border: 1px solid var(--border-2);
+  color: var(--text);
+  padding: 10px 18px;
   border-radius: 6px;
   font-size: 13px;
-  display: none;
-}
-.status.show {
   display: flex;
   align-items: center;
   gap: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  z-index: 1100;
 }
-.status.success {
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.toast.success {
+  border-color: var(--success-bd);
   background: var(--success-bg);
   color: var(--success-fg);
-  border: 1px solid var(--success-bd);
 }
-.status.error {
+.toast.error {
+  border-color: var(--error-bd);
   background: var(--error-bg);
   color: var(--error-fg);
-  border: 1px solid var(--error-bd);
 }
-.status.info {
+.toast.info {
+  border-color: var(--info-bd);
   background: var(--info-bg);
   color: var(--info-fg);
-  border: 1px solid var(--info-bd);
+}
+.toast .icon {
+  font-size: 18px;
+}
+
+/* ---------- drop overlay ---------- */
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 15, 30, 0.85);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.drop-overlay[hidden] {
+  display: none;
+}
+.drop-overlay-inner {
+  border: 3px dashed var(--accent-2);
+  border-radius: 16px;
+  padding: 60px 80px;
+  background: rgba(107, 70, 193, 0.1);
+  color: #d6c4ff;
+  text-align: center;
+}
+.drop-icon {
+  font-size: 64px;
+  display: block;
+  margin: 0 auto 12px;
+}
+.drop-overlay p {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 /* ---------- hint ---------- */

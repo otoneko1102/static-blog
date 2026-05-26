@@ -1,0 +1,55 @@
+include _icon.pug
+
+main.main-pane#mainPane
+  #emptyState.empty-state
+    +icon("folder_open", "empty-icon")
+    p ファイルを選択してください
+
+  #fileView.file-view(hidden)
+    #previewMode.view-mode
+      .file-view-toolbar
+        .file-name-group
+          span.icon.file-icon#fileTypeIcon(aria-hidden="true") image
+          input.rename-input#renameInput(
+            type="text",
+            spellcheck="false",
+            autocomplete="off",
+            aria-label="ファイル名"
+          )
+          button.btn.btn-sm#renameBtn(type="button", title="リネーム (Enter)")
+            +icon("check")
+            span.btn-label 適用
+        .file-meta#fileMeta
+        .toolbar-spacer
+        button.btn.btn-sm#editBtn(type="button", title="画像を編集 (E)", hidden)
+          +icon("crop")
+          span.btn-label 編集
+        button.btn.btn-sm#copyMdBtn(type="button", title="Markdown 記法をコピー")
+          +icon("content_copy")
+          span.btn-label MD コピー
+        button.btn.btn-sm#copyUrlBtn(type="button", title="URL をコピー")
+          +icon("link")
+          span.btn-label URL コピー
+        button.btn.btn-sm.btn-danger#deleteBtn(type="button", title="削除")
+          +icon("delete")
+          span.btn-label 削除
+
+      .preview-area#previewArea
+        // 動的に挿入される (img / video / audio / iframe / placeholder)
+
+      .md-snippet
+        label.md-label Markdown 埋め込み
+        .md-row
+          code.md-code#mdCode
+          button.btn.btn-icon-only#copyMdInlineBtn(
+            type="button",
+            title="コピー"
+          )
+            +icon("content_copy")
+
+    include _edit.pug
+
+  #dropOverlay.drop-overlay(hidden)
+    .drop-overlay-inner
+      +icon("file_upload", "drop-icon")
+      p ここにドロップしてアップロード

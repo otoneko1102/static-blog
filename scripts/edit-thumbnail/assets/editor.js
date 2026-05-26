@@ -6,11 +6,12 @@
     initialFilename: SSR_FILENAME,
   } = JSON.parse(document.getElementById("editor-config").textContent);
   const ASPECT = TARGET_WIDTH / TARGET_HEIGHT;
-  const VALID_EXTS = [".png", ".jpg", ".jpeg", ".webp"];
+  const VALID_EXTS = [".png", ".jpg", ".jpeg", ".webp", ".heic", ".heif"];
 
   const $ = (id) => document.getElementById(id);
   const stageEl = $("stage");
-  const statusEl = $("status");
+  const toastEl = $("toast");
+  const dropOverlayEl = $("dropOverlay");
 
   const controlIds = [
     "rotateL",
@@ -40,26 +41,22 @@
     for (const id of controlIds) $(id).disabled = !enabled;
   }
 
-  function makeStatusIcon(name) {
-    const el = document.createElement("span");
-    el.className = "icon inline-icon";
-    el.setAttribute("aria-hidden", "true");
-    el.textContent = name;
-    return el;
-  }
-
-  function showStatus(msg, type) {
-    statusEl.replaceChildren();
+  let toastTimer = null;
+  function showStatus(msg, type = "info") {
     const iconName =
       type === "success" ? "check_circle" : type === "error" ? "error" : "info";
-    statusEl.appendChild(makeStatusIcon(iconName));
-    const text = document.createElement("span");
-    text.textContent = msg;
-    statusEl.appendChild(text);
-    statusEl.className = "status show " + type;
-    if (type !== "error") {
-      setTimeout(() => statusEl.classList.remove("show"), 3500);
-    }
+    toastEl.replaceChildren();
+    const i = document.createElement("span");
+    i.className = "icon";
+    i.setAttribute("aria-hidden", "true");
+    i.textContent = iconName;
+    toastEl.appendChild(i);
+    const t = document.createElement("span");
+    t.textContent = msg;
+    toastEl.appendChild(t);
+    toastEl.className = "toast show " + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("show"), 3500);
   }
 
   function ensureStageImage() {
@@ -123,31 +120,97 @@
     else imgEl.addEventListener("load", start, { once: true });
   }
 
-  $("fileInput").addEventListener("change", (e) => {
-    const file = e.target.files?.[0];
+  function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(file);
+    });
+  }
+
+  async function uploadFile(file) {
     if (!file) return;
     const rawExt = "." + (file.name.split(".").pop() || "png").toLowerCase();
     currentExt = VALID_EXTS.includes(rawExt) ? rawExt : ".png";
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const dataUrl = reader.result;
-      try {
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dataUrl, ext: currentExt }),
-        });
-        const j = await res.json();
-        if (!res.ok || j.error) throw new Error(j.error || res.statusText);
-        showStatus(`画像をアップロード: _thumbnail${j.ext}`, "success");
-      } catch (err) {
-        showStatus("アップロード失敗: " + err.message, "error");
-        return;
-      }
-      initCropper(dataUrl);
-    };
-    reader.readAsDataURL(file);
+    let dataUrl;
+    try {
+      dataUrl = await readFileAsDataURL(file);
+    } catch (err) {
+      showStatus("ファイル読み込み失敗: " + err.message, "error");
+      return;
+    }
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dataUrl, ext: currentExt }),
+      });
+      const j = await res.json();
+      if (!res.ok || j.error) throw new Error(j.error || res.statusText);
+      showStatus(
+        j.dataUrl
+          ? `HEIC を PNG に変換してアップロード: _thumbnail${j.ext}`
+          : `画像をアップロード: _thumbnail${j.ext}`,
+        "success",
+      );
+      // HEIC など、サーバ側で PNG 変換した場合は変換後の dataUrl を使う
+      // (ブラウザは HEIC を <img> でレンダリングできないため)
+      initCropper(j.dataUrl || dataUrl);
+    } catch (err) {
+      showStatus("アップロード失敗: " + err.message, "error");
+    }
+  }
+
+  $("fileInput").addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    await uploadFile(file);
     e.target.value = "";
+  });
+
+  // drag & drop
+  let dragDepth = 0;
+  function isFileDrag(e) {
+    return Array.from(e.dataTransfer?.types || []).includes("Files");
+  }
+  window.addEventListener("dragenter", (e) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    dropOverlayEl.hidden = false;
+  });
+  window.addEventListener("dragover", (e) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+  window.addEventListener("dragleave", (e) => {
+    if (!isFileDrag(e)) return;
+    dragDepth--;
+    if (dragDepth <= 0) {
+      dragDepth = 0;
+      dropOverlayEl.hidden = true;
+    }
+  });
+  window.addEventListener("drop", async (e) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    dropOverlayEl.hidden = true;
+    const files = Array.from(e.dataTransfer.files || []).filter(
+      (f) => f.type === "" || f.type.startsWith("image/"),
+    );
+    if (files.length === 0) {
+      showStatus("画像ファイルではありません", "error");
+      return;
+    }
+    if (files.length > 1) {
+      showStatus(
+        `${files.length} 件のうち最初の 1 件のみ使用します (サムネイルは 1 枚)`,
+        "info",
+      );
+    }
+    await uploadFile(files[0]);
   });
 
   function nudge(dx, dy) {
@@ -273,4 +336,6 @@
   });
 
   initFromSSR();
+
+  new EventSource("/api/events");
 })();
