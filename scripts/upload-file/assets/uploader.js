@@ -625,8 +625,14 @@
     if (!cropper) return;
     cropper.rotate(deg);
     requestAnimationFrame(() => {
+      const ct = cropper.getContainerData();
       const cd = cropper.getCanvasData();
-      cropper.setCropBoxData({ left: cd.left, top: cd.top, width: cd.width, height: cd.height });
+      const scale = Math.min(ct.width / cd.width, ct.height / cd.height);
+      if (scale < 1) cropper.zoom(scale - 1);
+      requestAnimationFrame(() => {
+        const cd2 = cropper.getCanvasData();
+        cropper.setCropBoxData({ left: cd2.left, top: cd2.top, width: cd2.width, height: cd2.height });
+      });
     });
   }
   $("editRotateL").addEventListener("click", () => rotateCropper(-90));
