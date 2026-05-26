@@ -628,7 +628,15 @@
       const ct = cropper.getContainerData();
       const cd = cropper.getCanvasData();
       const scale = Math.min(ct.width / cd.width, ct.height / cd.height);
-      if (scale < 1) cropper.zoom(scale - 1);
+      if (scale < 1) {
+        const newW = cd.width * scale;
+        const newH = cd.height * scale;
+        cropper.setCanvasData({
+          width: newW,
+          left: (ct.width - newW) / 2,
+          top: (ct.height - newH) / 2,
+        });
+      }
       requestAnimationFrame(() => {
         const cd2 = cropper.getCanvasData();
         cropper.setCropBoxData({ left: cd2.left, top: cd2.top, width: cd2.width, height: cd2.height });
