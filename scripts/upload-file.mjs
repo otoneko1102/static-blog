@@ -511,18 +511,22 @@ const cropperJsPath = path.join(
   "dist",
   "cropper.min.js",
 );
+const dayjsPath = path.join(rootDir, "node_modules", "dayjs", "dayjs.min.js");
+const dayjsUtcPath = path.join(rootDir, "node_modules", "dayjs", "plugin", "utc.js");
+const dayjsTzPath = path.join(rootDir, "node_modules", "dayjs", "plugin", "timezone.js");
 
+const JS_MIME = "application/javascript; charset=utf-8";
 const STATIC_ROUTES = {
   "/uploader.css": [
     path.join(assetsDir, "uploader.css"),
     "text/css; charset=utf-8",
   ],
-  "/uploader.js": [
-    path.join(assetsDir, "uploader.js"),
-    "application/javascript; charset=utf-8",
-  ],
+  "/uploader.js": [path.join(assetsDir, "uploader.js"), JS_MIME],
   "/cropper.css": [cropperCssPath, "text/css; charset=utf-8"],
-  "/cropper.js": [cropperJsPath, "application/javascript; charset=utf-8"],
+  "/cropper.js": [cropperJsPath, JS_MIME],
+  "/dayjs.js": [dayjsPath, JS_MIME],
+  "/dayjs-utc.js": [dayjsUtcPath, JS_MIME],
+  "/dayjs-timezone.js": [dayjsTzPath, JS_MIME],
 };
 
 async function handleUpload(articleDir, payload) {

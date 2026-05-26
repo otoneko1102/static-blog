@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { formatJstNow } from "./lib/jst.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,20 +38,6 @@ function resolveArticleId(explicit, field) {
     );
   }
   return branchId;
-}
-
-function pad(n) {
-  return String(n).padStart(2, "0");
-}
-
-function formatJstNow() {
-  const now = new Date();
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  const jst = new Date(utc + 9 * 60 * 60000);
-  return (
-    `${jst.getFullYear()}-${pad(jst.getMonth() + 1)}-${pad(jst.getDate())} ` +
-    `${pad(jst.getHours())}:${pad(jst.getMinutes())}`
-  );
 }
 
 function updateFrontmatterField(text, field, value) {

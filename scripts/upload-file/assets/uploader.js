@@ -76,10 +76,7 @@
     return `${(n / 1024 / 1024).toFixed(2)} MB`;
   }
   function formatDate(ms) {
-    const d = new Date(ms);
-    const jst = new Date(d.getTime() + d.getTimezoneOffset() * 60000 + 9 * 60 * 60000);
-    const pad = (x) => String(x).padStart(2, "0");
-    return `${jst.getFullYear()}-${pad(jst.getMonth() + 1)}-${pad(jst.getDate())} ${pad(jst.getHours())}:${pad(jst.getMinutes())}`;
+    return dayjs(ms).tz("Asia/Tokyo").format("YYYY-MM-DD HH:mm");
   }
   function iconForKind(kind, mime) {
     if (kind === "image") return "image";
