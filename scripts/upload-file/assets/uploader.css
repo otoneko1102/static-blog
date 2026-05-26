@@ -572,7 +572,11 @@ body {
   flex: 1;
   min-height: 200px;
   overflow: hidden;
-  padding: 12px 12px 20px;
+  position: relative;
+}
+.edit-canvas-inner {
+  position: absolute;
+  inset: 16px;
 }
 /* Cropper.js のトリミングハンドルが端で見切れないよう crop-box は visible に、
    canvas 自体は hidden のままにして画像のはみ出しは防ぐ */

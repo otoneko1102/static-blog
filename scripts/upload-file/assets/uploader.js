@@ -528,18 +528,6 @@
     }
   }
 
-  const CROP_INSET = 16;
-  function setCropBoxInset() {
-    if (!cropper) return;
-    const cd = cropper.getCanvasData();
-    cropper.setCropBoxData({
-      left: cd.left + CROP_INSET,
-      top: cd.top + CROP_INSET,
-      width: cd.width - CROP_INSET * 2,
-      height: cd.height - CROP_INSET * 2,
-    });
-  }
-
   function enterEditMode() {
     if (!selected || selected.kind !== "image") return;
     if (selected.articleId && selected.articleId !== CONFIG.articleId) return;
@@ -563,7 +551,6 @@
         responsive: true,
         checkOrientation: true,
         minContainerHeight: 400,
-        ready: setCropBoxInset,
       });
     };
     const folder = selected.folder || "";
@@ -637,7 +624,10 @@
   function rotateCropper(deg) {
     if (!cropper) return;
     cropper.rotate(deg);
-    requestAnimationFrame(() => setCropBoxInset());
+    requestAnimationFrame(() => {
+      const cd = cropper.getCanvasData();
+      cropper.setCropBoxData({ left: cd.left, top: cd.top, width: cd.width, height: cd.height });
+    });
   }
   $("editRotateL").addEventListener("click", () => rotateCropper(-90));
   $("editRotateR").addEventListener("click", () => rotateCropper(90));
