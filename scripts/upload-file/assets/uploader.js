@@ -528,6 +528,30 @@
     }
   }
 
+  // キャンバスをコンテナの FILL 割合に収めて中央配置（初期表示・回転後共通）
+  // viewMode: 1 では cropBox 制約で setCanvasData が縮小できないため clear/crop で囲む
+  const CANVAS_FILL = 0.85;
+  function fitCanvasWithMargin() {
+    if (!cropper) return;
+    const ct = cropper.getContainerData();
+    const cd = cropper.getCanvasData();
+    const scale = Math.min(
+      (ct.width * CANVAS_FILL) / cd.width,
+      (ct.height * CANVAS_FILL) / cd.height,
+    );
+    cropper.clear();
+    const newW = cd.width * scale;
+    const newH = cd.height * scale;
+    cropper.setCanvasData({
+      width: newW,
+      left: (ct.width - newW) / 2,
+      top: (ct.height - newH) / 2,
+    });
+    cropper.crop();
+    const cd2 = cropper.getCanvasData();
+    cropper.setCropBoxData({ left: cd2.left, top: cd2.top, width: cd2.width, height: cd2.height });
+  }
+
   function enterEditMode() {
     if (!selected || selected.kind !== "image") return;
     if (selected.articleId && selected.articleId !== CONFIG.articleId) return;
@@ -559,6 +583,9 @@
         responsive: true,
         checkOrientation: true,
         minContainerHeight: 400,
+        ready() {
+          fitCanvasWithMargin();
+        },
       });
     };
     const folder = selected.folder || "";
@@ -631,30 +658,8 @@
   $("editSaveBtn").addEventListener("click", saveEdit);
   function rotateCropper(deg) {
     if (!cropper) return;
-    // viewMode: 1 では canvas.minWidth = cropBox.width となり setCanvasData で
-    // 縮小できないため、一旦 clear() で crop box を外してから縮小する
-    cropper.clear();
     cropper.rotate(deg);
-    const ct = cropper.getContainerData();
-    const cd = cropper.getCanvasData();
-    const scale = Math.min(ct.width / cd.width, ct.height / cd.height);
-    if (scale < 1) {
-      const newW = cd.width * scale;
-      const newH = cd.height * scale;
-      cropper.setCanvasData({
-        width: newW,
-        left: (ct.width - newW) / 2,
-        top: (ct.height - newH) / 2,
-      });
-    } else {
-      cropper.setCanvasData({
-        left: (ct.width - cd.width) / 2,
-        top: (ct.height - cd.height) / 2,
-      });
-    }
-    cropper.crop();
-    const cd2 = cropper.getCanvasData();
-    cropper.setCropBoxData({ left: cd2.left, top: cd2.top, width: cd2.width, height: cd2.height });
+    fitCanvasWithMargin();
   }
   $("editRotateL").addEventListener("click", () => rotateCropper(-90));
   $("editRotateR").addEventListener("click", () => rotateCropper(90));
