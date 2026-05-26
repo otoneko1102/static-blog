@@ -15,7 +15,9 @@
     "new": "node scripts/create-article.mjs",
     "thumbnail": "node scripts/edit-thumbnail.mjs",
     "file": "node scripts/upload-file.mjs",
-    "comp": "node scripts/compress-files.mjs"
+    "comp": "node scripts/compress-files.mjs",
+    "date:pub": "node scripts/update-date.mjs pubDate",
+    "date:update": "node scripts/update-date.mjs updatedDate"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.6",
