@@ -1,49 +1,52 @@
 include _icon.pug
 
 mixin edit-btn(id, iconName, label, title)
-  button.btn.btn-sm(id=id type="button" title=title)
+  button.btn.btn-sm(id=id, type="button", title=title)
     +icon(iconName)
     span.btn-label= label
 
 mixin edit-btn-icon(id, iconName, title)
-  button.btn.btn-sm.btn-icon-only(id=id type="button" title=title)
+  button.btn.btn-sm.btn-icon-only(id=id, type="button", title=title)
     +icon(iconName)
 
 #editMode.edit-mode(hidden)
   .edit-toolbar(role="toolbar", aria-label="編集ツール")
-    button.btn.btn-sm#editCancelBtn(type="button", title="キャンセル (Esc)")
+    button#editCancelBtn.btn.btn-sm(type="button", title="キャンセル (Esc)")
       +icon("close")
       span.btn-label キャンセル
 
     span.sep(role="separator")
 
-    +edit-btn("editRotateL", "rotate_left",  "90°", "左に90°回転")
+    +edit-btn("editRotateL", "rotate_left", "90°", "左に90°回転")
     +edit-btn("editRotateR", "rotate_right", "90°", "右に90°回転")
-    +edit-btn("editFlipH",   "swap_horiz",   "水平", "水平反転")
-    +edit-btn("editFlipV",   "swap_vert",    "垂直", "垂直反転")
+    +edit-btn("editFlipH", "swap_horiz", "水平", "水平反転")
+    +edit-btn("editFlipV", "swap_vert", "垂直", "垂直反転")
 
     span.sep(role="separator")
 
-    +edit-btn("editZoomIn",  "zoom_in",  "ズーム", "拡大 (+)")
+    +edit-btn("editZoomIn", "zoom_in", "ズーム", "拡大 (+)")
     +edit-btn("editZoomOut", "zoom_out", "ズーム", "縮小 (-)")
 
     span.sep(role="separator")
 
     .nudge-pad(role="group", aria-label="1pxずつ移動")
-      +edit-btn-icon("editNudgeUp",    "keyboard_arrow_up",    "上に1px (↑ / Shift+↑ で 10px)")
-      +edit-btn-icon("editNudgeLeft",  "keyboard_arrow_left",  "左に1px (← / Shift+← で 10px)")
-      +edit-btn-icon("editNudgeDown",  "keyboard_arrow_down",  "下に1px (↓ / Shift+↓ で 10px)")
+      +edit-btn-icon("editNudgeUp", "keyboard_arrow_up", "上に1px (↑ / Shift+↑ で 10px)")
+      +edit-btn-icon("editNudgeLeft", "keyboard_arrow_left", "左に1px (← / Shift+← で 10px)")
+      +edit-btn-icon("editNudgeDown", "keyboard_arrow_down", "下に1px (↓ / Shift+↓ で 10px)")
       +edit-btn-icon("editNudgeRight", "keyboard_arrow_right", "右に1px (→ / Shift+→ で 10px)")
 
     +edit-btn("editReset", "restart_alt", "リセット", "リセット (0)")
 
     span.toolbar-spacer
 
-    button.btn.btn-sm.btn-primary#editSaveBtn(type="button", title="保存 (Ctrl+S)")
+    button#editSaveBtn.btn.btn-sm.btn-primary(
+      type="button",
+      title="保存 (Ctrl+S)"
+    )
       +icon("save")
       span.btn-label 保存
 
-  .edit-canvas#editCanvas
+  #editCanvas.edit-canvas
     .edit-canvas-inner
       img#editImage(alt="編集中の画像")
 

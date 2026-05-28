@@ -69,9 +69,7 @@ async function compressFile(filePath) {
         .toBuffer();
     } else if ([".jpg", ".jpeg", ".jpe", ".jfif"].includes(ext)) {
       // JPEG: mozjpeg エンコーダで品質88 (元が低品質なら再エンコで大きくなる可能性があるためサイズチェック)
-      outBuf = await sharp(buf)
-        .jpeg({ quality: 88, mozjpeg: true })
-        .toBuffer();
+      outBuf = await sharp(buf).jpeg({ quality: 88, mozjpeg: true }).toBuffer();
     } else {
       // WebP / AVIF / GIF / APNG / 動画 / 音声 / PDF → スキップ
       return null;
@@ -83,7 +81,11 @@ async function compressFile(filePath) {
   if (!outBuf || outBuf.length >= originalSize) return null;
 
   fs.writeFileSync(filePath, outBuf);
-  return { originalSize, newSize: outBuf.length, saved: originalSize - outBuf.length };
+  return {
+    originalSize,
+    newSize: outBuf.length,
+    saved: originalSize - outBuf.length,
+  };
 }
 
 async function main() {
@@ -96,7 +98,9 @@ async function main() {
   }
 
   console.log(`[記事ID] ${id}`);
-  console.log(`[対象]   ${path.relative(rootDir, articleDir).replace(/\\/g, "/")}/`);
+  console.log(
+    `[対象]   ${path.relative(rootDir, articleDir).replace(/\\/g, "/")}/`,
+  );
   console.log("");
 
   const allFiles = walkFiles(articleDir);

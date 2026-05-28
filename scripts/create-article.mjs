@@ -5,6 +5,7 @@ import path from "path";
 import readline from "readline";
 import { fileURLToPath } from "url";
 import { execSync } from "child_process";
+import { formatJstNow } from "./lib/jst.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,23 +21,6 @@ const rl = readline.createInterface({
 
 function question(prompt) {
   return new Promise((resolve) => rl.question(prompt, resolve));
-}
-
-function pad(num) {
-  return String(num).padStart(2, "0");
-}
-
-function formatJstDate(date = new Date()) {
-  const utc = date.getTime() + date.getTimezoneOffset() * 60000;
-  const jst = new Date(utc + 9 * 60 * 60000);
-
-  const year = jst.getFullYear();
-  const month = pad(jst.getMonth() + 1);
-  const day = pad(jst.getDate());
-  const hour = pad(jst.getHours());
-  const minute = pad(jst.getMinutes());
-
-  return `${year}-${month}-${day} ${hour}:${minute}`;
 }
 
 function validateId(id) {
@@ -94,7 +78,7 @@ async function main() {
       await question("description (任意、Enterでスキップ): ")
     ).trim();
 
-    const nowStr = formatJstDate();
+    const nowStr = formatJstNow();
 
     const outFile = path.join(blogDir, `${id}.mdx`);
     const publicDir = path.join(publicFilesDir, id);

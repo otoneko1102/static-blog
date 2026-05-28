@@ -382,7 +382,7 @@ body {
   border-radius: 6px;
   min-width: 140px;
   padding: 4px 0;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 .move-option {
   display: block;
@@ -457,8 +457,8 @@ body {
   max-height: 100%;
   object-fit: contain;
   display: block;
-  background:
-    repeating-conic-gradient(#222 0% 25%, #2a2a3a 0% 50%) 50% / 16px 16px;
+  background: repeating-conic-gradient(#222 0% 25%, #2a2a3a 0% 50%) 50% / 16px
+    16px;
 }
 .preview-area audio {
   width: 100%;
