@@ -8,36 +8,29 @@ aside.sidebar(aria-label="ファイルツリー")
     label.btn.file-label(title="ファイルをアップロード")
       +icon("upload")
       span.btn-label アップロード
-      input(
+      input#fileInput(
         type="file",
-        id="fileInput",
         accept="image/*,.heic,.heif,video/*,.mts,.m2ts,.ts,.flv,.wmv,.asf,.rm,.rmvb,audio/*,.wma,.aiff,.aif,.mid,.midi,.amr,.caf,application/pdf",
         multiple
       )
-    button.btn.btn-icon-only#mkdirBtn(
-      type="button",
-      title="新規フォルダを作成"
-    )
+    button#mkdirBtn.btn.btn-icon-only(type="button", title="新規フォルダを作成")
       +icon("create_new_folder")
-    button.btn.btn-icon-only#refreshBtn(
-      type="button",
-      title="再読み込み"
-    )
+    button#refreshBtn.btn.btn-icon-only(type="button", title="再読み込み")
       +icon("refresh")
   .tree-root
     .tree-folder
       .tree-folder-row
         +icon("folder", "tree-folder-icon")
         span.tree-folder-name= articleId
-      ul.tree-list#fileList
+      ul#fileList.tree-list
         li.tree-empty 読み込み中...
 
   hr.sidebar-divider
 
-  button.sidebar-other-btn#otherArticlesToggle(type="button")
+  button#otherArticlesToggle.sidebar-other-btn(type="button")
     +icon("folder_special", "section-icon")
     span.sidebar-other-label その他の記事
-    span.other-count-badge#otherCountBadge(hidden)
+    span#otherCountBadge.other-count-badge(hidden)
     +icon("chevron_right", "other-chevron")
 
-  .other-articles-body#otherArticlesBody(hidden)
+  #otherArticlesBody.other-articles-body(hidden)

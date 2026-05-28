@@ -48,11 +48,7 @@
   let toastTimer = null;
   function toast(msg, type = "info") {
     const iconName =
-      type === "success"
-        ? "check_circle"
-        : type === "error"
-          ? "error"
-          : "info";
+      type === "success" ? "check_circle" : type === "error" ? "error" : "info";
     toastEl.replaceChildren();
     const i = document.createElement("span");
     i.className = "icon";
@@ -201,7 +197,9 @@
     if (!folderFiles[folderName]) {
       renderTree();
       try {
-        const data = await api(`/api/files?subfolder=${encodeURIComponent(folderName)}`);
+        const data = await api(
+          `/api/files?subfolder=${encodeURIComponent(folderName)}`,
+        );
         folderFiles[folderName] = data.files;
       } catch (err) {
         expandedFolders.delete(folderName);
@@ -222,18 +220,26 @@
       try {
         const d = await api(`/api/files?subfolder=${encodeURIComponent(fn)}`);
         folderFiles[fn] = d.files;
-      } catch { expandedFolders.delete(fn); }
+      } catch {
+        expandedFolders.delete(fn);
+      }
     }
 
     if (preserveSelectedName !== undefined) {
       if (!preserveSelectedFolder) {
         const found = files.find((f) => f.name === preserveSelectedName);
-        selected = found ? { ...found, folder: "", articleId: CONFIG.articleId } : null;
+        selected = found
+          ? { ...found, folder: "", articleId: CONFIG.articleId }
+          : null;
       } else {
         const subFiles = folderFiles[preserveSelectedFolder] ?? [];
         const found = subFiles.find((f) => f.name === preserveSelectedName);
         if (found) {
-          selected = { ...found, folder: preserveSelectedFolder, articleId: CONFIG.articleId };
+          selected = {
+            ...found,
+            folder: preserveSelectedFolder,
+            articleId: CONFIG.articleId,
+          };
           expandedFolders.add(preserveSelectedFolder);
         } else {
           selected = null;
@@ -264,12 +270,16 @@
   }
 
   function renderFileView() {
-    if (!selected) { showEmptyState(); return; }
+    if (!selected) {
+      showEmptyState();
+      return;
+    }
     if (mode === "edit") exitEditMode({ silent: true });
     emptyStateEl.hidden = true;
     fileViewEl.hidden = false;
 
-    const isMine = !selected.articleId || selected.articleId === CONFIG.articleId;
+    const isMine =
+      !selected.articleId || selected.articleId === CONFIG.articleId;
     const articleId = selected.articleId || CONFIG.articleId;
     const folder = selected.folder || "";
 
@@ -289,8 +299,10 @@
 
     const filePath = folder ? `${folder}/${selected.name}` : selected.name;
     const folderParam = folder ? `&folder=${encodeURIComponent(folder)}` : "";
-    const idParam = (selected.articleId && selected.articleId !== CONFIG.articleId)
-      ? `id=${encodeURIComponent(articleId)}&` : "";
+    const idParam =
+      selected.articleId && selected.articleId !== CONFIG.articleId
+        ? `id=${encodeURIComponent(articleId)}&`
+        : "";
     const apiUrl = `/api/file?${idParam}name=${encodeURIComponent(selected.name)}${folderParam}&_t=${Date.now()}`;
     const publicUrl = `/files/${articleId}/${filePath}`;
 
@@ -410,7 +422,10 @@
     } catch (err) {
       toast("リネーム失敗: " + err.message, "error");
       const curExt = selected.name.match(/(\.[^.]+)$/)?.[1] ?? "";
-      renameInputEl.value = selected.name.slice(0, selected.name.length - curExt.length);
+      renameInputEl.value = selected.name.slice(
+        0,
+        selected.name.length - curExt.length,
+      );
     }
   }
   renameBtnEl.addEventListener("click", doRename);
@@ -421,7 +436,9 @@
     } else if (e.key === "Escape") {
       e.preventDefault();
       const curExt = selected?.name.match(/(\.[^.]+)$/)?.[1] ?? "";
-      renameInputEl.value = selected ? selected.name.slice(0, selected.name.length - curExt.length) : "";
+      renameInputEl.value = selected
+        ? selected.name.slice(0, selected.name.length - curExt.length)
+        : "";
       renameInputEl.blur();
     }
   });
@@ -547,7 +564,12 @@
     });
     cropper.crop();
     const cd2 = cropper.getCanvasData();
-    cropper.setCropBoxData({ left: cd2.left, top: cd2.top, width: cd2.width, height: cd2.height });
+    cropper.setCropBoxData({
+      left: cd2.left,
+      top: cd2.top,
+      width: cd2.width,
+      height: cd2.height,
+    });
   }
 
   function enterEditMode() {
@@ -676,9 +698,7 @@
   $("editNudgeUp").addEventListener("click", () => editNudge(0, -NUDGE_STEP));
   $("editNudgeDown").addEventListener("click", () => editNudge(0, NUDGE_STEP));
   $("editNudgeLeft").addEventListener("click", () => editNudge(-NUDGE_STEP, 0));
-  $("editNudgeRight").addEventListener("click", () =>
-    editNudge(NUDGE_STEP, 0),
-  );
+  $("editNudgeRight").addEventListener("click", () => editNudge(NUDGE_STEP, 0));
   $("editReset").addEventListener("click", editReset);
 
   function isTypingTarget(target) {
@@ -910,7 +930,9 @@
 
   // ---------- フォルダ作成 ----------
   mkdirBtnEl.addEventListener("click", async () => {
-    const name = prompt("フォルダ名 (半角英小文字・数字・ハイフン・アンダースコア):");
+    const name = prompt(
+      "フォルダ名 (半角英小文字・数字・ハイフン・アンダースコア):",
+    );
     if (!name) return;
     try {
       await api("/api/mkdir", {
@@ -934,7 +956,8 @@
       const targets = [];
       if (currentFolder) targets.push({ name: "", label: "(ルート)" });
       for (const f of folders) {
-        if (f.name !== currentFolder) targets.push({ name: f.name, label: f.name + "/" });
+        if (f.name !== currentFolder)
+          targets.push({ name: f.name, label: f.name + "/" });
       }
       if (targets.length === 0) {
         toast("移動先がありません", "info");
@@ -953,7 +976,9 @@
       moveDropdownEl.hidden = true;
     }
   });
-  document.addEventListener("click", () => { moveDropdownEl.hidden = true; });
+  document.addEventListener("click", () => {
+    moveDropdownEl.hidden = true;
+  });
 
   async function moveSelectedFile(targetFolder) {
     moveDropdownEl.hidden = true;

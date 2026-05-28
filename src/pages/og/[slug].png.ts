@@ -8,7 +8,22 @@ import path from "node:path";
 
 const TARGET_WIDTH = 1200;
 const TARGET_HEIGHT = 630;
-const VALID_EXTS = [".png", ".jpg", ".jpeg", ".jpe", ".jfif", ".webp", ".avif", ".gif", ".apng", ".bmp", ".tif", ".tiff", ".heic", ".heif"] as const;
+const VALID_EXTS = [
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".jpe",
+  ".jfif",
+  ".webp",
+  ".avif",
+  ".gif",
+  ".apng",
+  ".bmp",
+  ".tif",
+  ".tiff",
+  ".heic",
+  ".heif",
+] as const;
 
 let fontData: ArrayBuffer | null = null;
 const thumbnailCache = new Map<string, string>();

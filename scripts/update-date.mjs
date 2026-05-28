@@ -53,10 +53,7 @@ function updateFrontmatterField(text, field, value) {
   } else {
     // pubDate の直後に updatedDate を入れるのが慣例。なければ末尾追加。
     if (field === "updatedDate" && /^pubDate:/m.test(fm)) {
-      newFm = fm.replace(
-        /^(pubDate:.*)$/m,
-        `$1\n${field}: "${value}"`,
-      );
+      newFm = fm.replace(/^(pubDate:.*)$/m, `$1\n${field}: "${value}"`);
     } else {
       newFm = `${fm}\n${field}: "${value}"`;
     }
