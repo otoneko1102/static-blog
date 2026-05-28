@@ -1,6 +1,7 @@
 import { defineCollection } from "astro:content";
 import { glob } from "astro/loaders";
 import { z } from "astro/zod";
+import { dayjs } from "./utils/jst";
 
 /**
  * 日付値を JST として Date に変換する。
@@ -14,25 +15,21 @@ function toJstDate(val: unknown): Date | undefined {
   if (s === "" || s.toLowerCase() === "null" || s.toLowerCase() === "undefined")
     return undefined;
 
-  // "YYYY-MM-DD" — date only, interpret as JST midnight
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
-    return new Date(`${s}T00:00:00+09:00`);
-  }
-
-  // "YYYY-MM-DD HH:mm" / "YYYY-MM-DD HH:mm:ss" → JST
-  const datetimeMatch = s.match(
-    /^(\d{4}-\d{2}-\d{2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/,
+  // "YYYY-MM-DD" / "YYYY-MM-DD HH:mm" / "YYYY-MM-DD HH:mm:ss" を JST として解釈
+  const m = s.match(
+    /^(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/,
   );
-  if (datetimeMatch) {
-    const [, date, hour, minute, second] = datetimeMatch;
-    const hh = hour.padStart(2, "0");
-    const mm = minute.padStart(2, "0");
-    const ss = (second ?? "0").padStart(2, "0");
-    return new Date(`${date}T${hh}:${mm}:${ss}+09:00`);
+  if (m) {
+    const [, date, hour = "0", minute = "0", second = "0"] = m;
+    const iso =
+      `${date}T${hour.padStart(2, "0")}:${minute.padStart(2, "0")}` +
+      `:${second.padStart(2, "0")}+09:00`;
+    return dayjs(iso).toDate();
   }
 
-  // ISO 8601 等 → JS エンジンに委ねる
-  return new Date(s);
+  // ISO 8601 等 → dayjs に委ねる
+  const d = dayjs(s);
+  return d.isValid() ? d.toDate() : undefined;
 }
 
 /** JST 日付フォーマットを受け付ける Zod スキーマ */

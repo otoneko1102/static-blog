@@ -1,10 +1,5 @@
 ---
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc.js";
-import timezone from "dayjs/plugin/timezone.js";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
+import { jst } from "../utils/jst";
 
 interface Props {
   date: Date;
@@ -12,9 +7,9 @@ interface Props {
 
 const { date } = Astro.props;
 
-const jst = dayjs(date).tz("Asia/Tokyo");
-const formatted = jst.format("YYYY/MM/DD");
-const datetimeTokyo = jst.format("YYYY-MM-DDTHH:mm:ssZ");
+const d = jst(date);
+const formatted = d.format("YYYY/MM/DD");
+const datetimeTokyo = d.format("YYYY-MM-DDTHH:mm:ssZ");
 ---
 
 <time datetime={datetimeTokyo}>{formatted}</time>
