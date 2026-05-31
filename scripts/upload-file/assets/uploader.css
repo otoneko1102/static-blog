@@ -227,6 +227,28 @@ body {
   font-size: 12px;
   font-style: italic;
 }
+/* サブフォルダ内アイテム (インデント) */
+.tree-item.tree-item-sub {
+  padding-left: 44px;
+}
+/* フォルダ行 */
+.tree-folder-item {
+  padding: 4px 12px 4px 10px;
+  color: var(--accent-fg);
+}
+.tree-folder-item .icon {
+  color: #fbbf24;
+}
+.folder-chevron {
+  font-size: 14px !important;
+  flex: 0 0 14px;
+  color: var(--text-mute);
+  transition: transform 0.15s;
+}
+.folder-chevron.is-expanded {
+  transform: rotate(90deg);
+}
+
 .tree-item {
   padding: 4px 12px 4px 30px;
   display: flex;
@@ -342,6 +364,46 @@ body {
   flex: 0 0 20px;
   color: #7dd3fc;
 }
+/* 拡張子ラベル (入力欄の右) */
+.rename-ext {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  color: var(--text-dim);
+  padding: 0 4px;
+  user-select: none;
+}
+/* 移動ドロップダウン */
+.move-dropdown {
+  position: absolute;
+  z-index: 200;
+  background: var(--bg-2);
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  min-width: 140px;
+  padding: 4px 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+.move-option {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.move-option:hover {
+  background: var(--bg-row-hover);
+}
+/* 移動ボタン周りを relative に */
+.file-view-toolbar {
+  position: relative;
+}
+
 .rename-input {
   flex: 1;
   min-width: 0;
@@ -395,8 +457,8 @@ body {
   max-height: 100%;
   object-fit: contain;
   display: block;
-  background:
-    repeating-conic-gradient(#222 0% 25%, #2a2a3a 0% 50%) 50% / 16px 16px;
+  background: repeating-conic-gradient(#222 0% 25%, #2a2a3a 0% 50%) 50% / 16px
+    16px;
 }
 .preview-area audio {
   width: 100%;
@@ -510,7 +572,19 @@ body {
   flex: 1;
   min-height: 200px;
   overflow: hidden;
-  padding: 8px;
+  position: relative;
+}
+.edit-canvas-inner {
+  position: absolute;
+  inset: 16px;
+}
+/* Cropper.js のトリミングハンドルが端で見切れないよう crop-box は visible に、
+   canvas 自体は hidden のままにして画像のはみ出しは防ぐ */
+.edit-canvas .cropper-container {
+  overflow: visible;
+}
+.edit-canvas .cropper-wrap-box {
+  overflow: hidden;
 }
 .edit-canvas img {
   display: block;

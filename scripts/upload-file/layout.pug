@@ -20,4 +20,10 @@ html(lang="ja")
     #toast.toast(role="status", aria-live="polite")
     script#uploader-config(type="application/json")!= configJson
     script(src="/cropper.js")
+    script(src="/dayjs.js")
+    script(src="/dayjs-utc.js")
+    script(src="/dayjs-timezone.js")
+    script.
+      dayjs.extend(dayjs_plugin_utc);
+      dayjs.extend(dayjs_plugin_timezone);
     script(src="/uploader.js")

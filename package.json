@@ -14,7 +14,12 @@
     "format": "prettier --write ./src/ ./scripts/",
     "new": "node scripts/create-article.mjs",
     "thumbnail": "node scripts/edit-thumbnail.mjs",
-    "file": "node scripts/upload-file.mjs"
+    "file": "node scripts/upload-file.mjs",
+    "comp": "node scripts/compress-files.mjs",
+    "date:pub": "node scripts/update-date.mjs pubDate",
+    "date:publish": "node scripts/update-date.mjs pubDate",
+    "date:updated": "node scripts/update-date.mjs updatedDate",
+    "date:update": "node scripts/update-date.mjs updatedDate"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.6",
@@ -24,6 +29,7 @@
     "astro": "^6.3.6",
     "astro-icon": "^1.1.5",
     "cheerio": "^1.2.0",
+    "dayjs": "^1.11.21",
     "fs-extra": "^11.3.4",
     "gray-matter": "^4.0.3",
     "he": "^1.2.0",

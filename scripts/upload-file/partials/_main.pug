@@ -1,6 +1,6 @@
 include _icon.pug
 
-main.main-pane#mainPane
+main#mainPane.main-pane
   #emptyState.empty-state
     +icon("folder_open", "empty-icon")
     p ファイルを選択してください
@@ -9,42 +9,44 @@ main.main-pane#mainPane
     #previewMode.view-mode
       .file-view-toolbar
         .file-name-group
-          span.icon.file-icon#fileTypeIcon(aria-hidden="true") image
-          input.rename-input#renameInput(
+          span#fileTypeIcon.icon.file-icon(aria-hidden="true") image
+          input#renameInput.rename-input(
             type="text",
             spellcheck="false",
             autocomplete="off",
-            aria-label="ファイル名"
+            aria-label="ファイル名 (拡張子除く)"
           )
-          button.btn.btn-sm#renameBtn(type="button", title="リネーム (Enter)")
+          span#renameExt.rename-ext
+          button#renameBtn.btn.btn-sm(type="button", title="リネーム (Enter)")
             +icon("check")
             span.btn-label 適用
-        .file-meta#fileMeta
+        #fileMeta.file-meta
         .toolbar-spacer
-        button.btn.btn-sm#editBtn(type="button", title="画像を編集 (E)", hidden)
+        button#moveBtn.btn.btn-sm(type="button", title="フォルダに移動", hidden)
+          +icon("drive_file_move")
+          span.btn-label 移動
+        #moveDropdown.move-dropdown(hidden)
+        button#editBtn.btn.btn-sm(type="button", title="画像を編集 (E)", hidden)
           +icon("crop")
           span.btn-label 編集
-        button.btn.btn-sm#copyMdBtn(type="button", title="Markdown 記法をコピー")
+        button#copyMdBtn.btn.btn-sm(type="button", title="Markdown 記法をコピー")
           +icon("content_copy")
           span.btn-label MD コピー
-        button.btn.btn-sm#copyUrlBtn(type="button", title="URL をコピー")
+        button#copyUrlBtn.btn.btn-sm(type="button", title="URL をコピー")
           +icon("link")
           span.btn-label URL コピー
-        button.btn.btn-sm.btn-danger#deleteBtn(type="button", title="削除")
+        button#deleteBtn.btn.btn-sm.btn-danger(type="button", title="削除")
           +icon("delete")
           span.btn-label 削除
 
-      .preview-area#previewArea
+      #previewArea.preview-area
         // 動的に挿入される (img / video / audio / iframe / placeholder)
 
       .md-snippet
         label.md-label Markdown 埋め込み
         .md-row
-          code.md-code#mdCode
-          button.btn.btn-icon-only#copyMdInlineBtn(
-            type="button",
-            title="コピー"
-          )
+          code#mdCode.md-code
+          button#copyMdInlineBtn.btn.btn-icon-only(type="button", title="コピー")
             +icon("content_copy")
 
     include _edit.pug

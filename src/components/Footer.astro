@@ -5,6 +5,9 @@ import {
   PORTFOLIO_URL,
   AUTHOR_NAME,
 } from "../consts";
+import { jst } from "../utils/jst";
+
+const year = jst().year();
 ---
 
 <footer class="site-footer">
@@ -58,6 +61,6 @@ import {
         RSS
       </a>
     </div>
-    <p>&copy; {new Date().getFullYear()} {AUTHOR_NAME}. All rights reserved.</p>
+    <p>&copy; {year} {AUTHOR_NAME}. All rights reserved.</p>
   </div>
 </footer>

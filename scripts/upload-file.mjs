@@ -25,6 +25,7 @@ const SERVER_PORT = 12631;
 
 // 記事 ID と同じ文字制限 (create-article.mjs / src/content.config.ts)
 const NAME_FULL_RE = /^[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/;
+const FOLDER_RE = /^[a-z0-9_-]{1,32}$/;
 
 // sharp が読める静止画形式 (拡張子ベース)
 const SHARP_STATIC_EXTS = [
@@ -32,8 +33,8 @@ const SHARP_STATIC_EXTS = [
   ".apng",
   ".jpg",
   ".jpeg",
-  ".jpe",   // JPEG 別拡張子
-  ".jfif",  // JPEG File Interchange Format
+  ".jpe", // JPEG 別拡張子
+  ".jfif", // JPEG File Interchange Format
   ".webp",
   ".gif",
   ".avif",
@@ -49,17 +50,23 @@ const IMAGE_EXTS = [...SHARP_STATIC_EXTS, ...HEIC_EXTS];
 // 動画形式
 const VIDEO_EXTS = [
   // Web 標準 / モダン
-  ".mp4", ".m4v", ".webm",
+  ".mp4",
+  ".m4v",
+  ".webm",
   // Apple QuickTime
   ".mov",
   // AVI / Windows
-  ".avi", ".wmv", ".asf",
+  ".avi",
+  ".wmv",
+  ".asf",
   // Matroska
   ".mkv",
   // Flash (レガシー)
-  ".flv", ".f4v",
+  ".flv",
+  ".f4v",
   // AVCHD カメラ
-  ".mts", ".m2ts",
+  ".mts",
+  ".m2ts",
   // MPEG-2 TS
   ".ts",
   // OGG
@@ -69,22 +76,32 @@ const VIDEO_EXTS = [
   // DVD
   ".vob",
   // RealMedia (レガシー)
-  ".rm", ".rmvb",
+  ".rm",
+  ".rmvb",
 ];
 // 音声形式
 const AUDIO_EXTS = [
   // Web 標準 / モダン
-  ".mp3", ".wav", ".ogg", ".oga", ".opus",
+  ".mp3",
+  ".wav",
+  ".ogg",
+  ".oga",
+  ".opus",
   // MPEG-4 系
-  ".m4a", ".m4b",
+  ".m4a",
+  ".m4b",
   // AAC / Windows
-  ".aac", ".wma",
+  ".aac",
+  ".wma",
   // Apple
-  ".aiff", ".aif", ".caf",
+  ".aiff",
+  ".aif",
+  ".caf",
   // ロスレス
   ".flac",
   // MIDI
-  ".mid", ".midi",
+  ".mid",
+  ".midi",
   // モバイル録音
   ".amr",
 ];
@@ -216,8 +233,7 @@ function loadKuromoji() {
 }
 
 // CJK統合漢字 / ひらがな / カタカナ / 全角英数記号
-const HAS_JAPANESE_RE =
-  /[぀-ゟ゠-ヿ㐀-䶿一-鿿＀-￯]/;
+const HAS_JAPANESE_RE = /[぀-ゟ゠-ヿ㐀-䶿一-鿿＀-￯]/;
 
 /**
  * 日本語混じり文字列をローマ字に変換する。
@@ -261,9 +277,16 @@ function isHeic(buffer) {
   if (buffer.length < 12) return false;
   if (buffer.subarray(4, 8).toString("ascii") !== "ftyp") return false;
   const brand = buffer.subarray(8, 12).toString("ascii");
-  return ["heic", "heix", "hevc", "hevx", "mif1", "msf1", "heim", "heis"].includes(
-    brand,
-  );
+  return [
+    "heic",
+    "heix",
+    "hevc",
+    "hevx",
+    "mif1",
+    "msf1",
+    "heim",
+    "heis",
+  ].includes(brand);
 }
 
 /**
@@ -339,6 +362,12 @@ function resolveSafe(articleDir, name) {
   return full;
 }
 
+function resolveInFolder(baseDir, folder, name) {
+  if (!folder) return resolveSafe(baseDir, name);
+  if (!FOLDER_RE.test(folder)) return null;
+  return resolveSafe(path.join(baseDir, folder), name);
+}
+
 const SHARP_FORMAT_TO_EXT = {
   png: ".png",
   jpeg: ".jpg",
@@ -369,8 +398,7 @@ async function processImage(buffer, originalExt) {
     const isAnimated = (meta.pages ?? 1) > 1;
     if (isAnimated) {
       // 元形式を保存 (sharp 経由で PNG にするとアニメが落ちる)
-      const ext =
-        SHARP_FORMAT_TO_EXT[meta.format] || lowerExt || ".gif";
+      const ext = SHARP_FORMAT_TO_EXT[meta.format] || lowerExt || ".gif";
       return { buffer, ext };
     }
     const png = await sharp(buffer).png({ compressionLevel: 9 }).toBuffer();
@@ -380,13 +408,30 @@ async function processImage(buffer, originalExt) {
   }
 }
 
-function listFiles(articleDir) {
-  if (!fs.existsSync(articleDir)) return [];
-  return fs
-    .readdirSync(articleDir, { withFileTypes: true })
+function listFiles(dir) {
+  if (!fs.existsSync(dir)) return { files: [], folders: [] };
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+  const folders = entries
+    .filter((e) => e.isDirectory())
+    .map((e) => {
+      const sub = path.join(dir, e.name);
+      let fileCount = 0;
+      try {
+        fileCount = fs
+          .readdirSync(sub)
+          .filter((f) => fs.statSync(path.join(sub, f)).isFile()).length;
+      } catch {
+        /* ignore */
+      }
+      return { name: e.name, kind: "folder", fileCount };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const files = entries
     .filter((e) => e.isFile())
     .map((e) => {
-      const full = path.join(articleDir, e.name);
+      const full = path.join(dir, e.name);
       const stat = fs.statSync(full);
       return {
         name: e.name,
@@ -398,6 +443,8 @@ function listFiles(articleDir) {
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name, "ja"));
+
+  return { files, folders };
 }
 
 function uniqueName(articleDir, desired) {
@@ -487,18 +534,34 @@ const cropperJsPath = path.join(
   "dist",
   "cropper.min.js",
 );
+const dayjsPath = path.join(rootDir, "node_modules", "dayjs", "dayjs.min.js");
+const dayjsUtcPath = path.join(
+  rootDir,
+  "node_modules",
+  "dayjs",
+  "plugin",
+  "utc.js",
+);
+const dayjsTzPath = path.join(
+  rootDir,
+  "node_modules",
+  "dayjs",
+  "plugin",
+  "timezone.js",
+);
 
+const JS_MIME = "application/javascript; charset=utf-8";
 const STATIC_ROUTES = {
   "/uploader.css": [
     path.join(assetsDir, "uploader.css"),
     "text/css; charset=utf-8",
   ],
-  "/uploader.js": [
-    path.join(assetsDir, "uploader.js"),
-    "application/javascript; charset=utf-8",
-  ],
+  "/uploader.js": [path.join(assetsDir, "uploader.js"), JS_MIME],
   "/cropper.css": [cropperCssPath, "text/css; charset=utf-8"],
-  "/cropper.js": [cropperJsPath, "application/javascript; charset=utf-8"],
+  "/cropper.js": [cropperJsPath, JS_MIME],
+  "/dayjs.js": [dayjsPath, JS_MIME],
+  "/dayjs-utc.js": [dayjsUtcPath, JS_MIME],
+  "/dayjs-timezone.js": [dayjsTzPath, JS_MIME],
 };
 
 async function handleUpload(articleDir, payload) {
@@ -518,11 +581,7 @@ async function handleUpload(articleDir, payload) {
         const processed = await processImage(buffer, originalExt);
         outBuffer = processed.buffer;
         outExt = processed.ext;
-      } else if (
-        kind === "video" ||
-        kind === "audio" ||
-        kind === "pdf"
-      ) {
+      } else if (kind === "video" || kind === "audio" || kind === "pdf") {
         // そのまま保存。拡張子だけ正規化 (.JPG → .jpg 等)
         outExt = originalExt;
       } else {
@@ -608,17 +667,25 @@ async function main() {
 
       if (req.method === "GET" && url.pathname === "/api/files") {
         const qid = url.searchParams.get("id");
+        const subfolder = url.searchParams.get("subfolder");
+        let targetDir = articleDir;
         if (qid !== null) {
           if (!/^[a-zA-Z0-9_-]+$/.test(qid)) {
             sendJson(res, 400, { error: "不正な記事IDです" });
             return;
           }
-          sendJson(res, 200, {
-            files: listFiles(path.join(publicFilesDir, qid)),
-          });
+          targetDir = path.join(publicFilesDir, qid);
+        }
+        if (subfolder !== null) {
+          if (!FOLDER_RE.test(subfolder)) {
+            sendJson(res, 400, { error: "不正なフォルダ名です" });
+            return;
+          }
+          const { files } = listFiles(path.join(targetDir, subfolder));
+          sendJson(res, 200, { files, folders: [] });
           return;
         }
-        sendJson(res, 200, { files: listFiles(articleDir) });
+        sendJson(res, 200, listFiles(targetDir));
         return;
       }
 
@@ -631,7 +698,9 @@ async function main() {
                 const dir = path.join(publicFilesDir, e.name);
                 const count = fs
                   .readdirSync(dir)
-                  .filter((f) => fs.statSync(path.join(dir, f)).isFile()).length;
+                  .filter((f) =>
+                    fs.statSync(path.join(dir, f)).isFile(),
+                  ).length;
                 return { id: e.name, fileCount: count };
               })
               .sort((a, b) => a.id.localeCompare(b.id))
@@ -643,6 +712,7 @@ async function main() {
       if (req.method === "GET" && url.pathname === "/api/file") {
         const qid = url.searchParams.get("id");
         const name = url.searchParams.get("name");
+        const qfolder = url.searchParams.get("folder") || "";
         let targetDir = articleDir;
         if (qid !== null) {
           if (!/^[a-zA-Z0-9_-]+$/.test(qid)) {
@@ -651,7 +721,7 @@ async function main() {
           }
           targetDir = path.join(publicFilesDir, qid);
         }
-        const full = resolveSafe(targetDir, name);
+        const full = resolveInFolder(targetDir, qfolder, name);
         if (!full || !fs.existsSync(full)) {
           sendJson(res, 404, { error: "ファイルが見つかりません" });
           return;
@@ -670,8 +740,21 @@ async function main() {
 
       if (req.method === "POST" && url.pathname === "/api/rename") {
         const body = await readBody(req);
-        const { from, to } = JSON.parse(body.toString("utf-8"));
-        const src = resolveSafe(articleDir, from);
+        const {
+          from,
+          to,
+          folder: reqFolder = "",
+        } = JSON.parse(body.toString("utf-8"));
+        const workDir = reqFolder
+          ? FOLDER_RE.test(reqFolder)
+            ? path.join(articleDir, reqFolder)
+            : null
+          : articleDir;
+        if (!workDir) {
+          sendJson(res, 400, { error: "不正なフォルダ名です" });
+          return;
+        }
+        const src = resolveSafe(workDir, from);
         if (!src) {
           sendJson(res, 400, { error: "不正な元ファイル名です" });
           return;
@@ -680,7 +763,6 @@ async function main() {
           sendJson(res, 404, { error: "リネーム元が存在しません" });
           return;
         }
-        // 日本語混じり入力もローマ字化して許容。最終形は [a-zA-Z0-9_-]+.<ext>
         const norm = await normalizeRenameName(to);
         if (!norm) {
           sendJson(res, 400, {
@@ -689,18 +771,19 @@ async function main() {
           });
           return;
         }
-        const dst = path.join(articleDir, norm.name);
+        const dst = path.join(workDir, norm.name);
         if (fs.existsSync(dst) && dst !== src) {
           sendJson(res, 409, { error: `'${norm.name}' は既に存在します` });
           return;
         }
         fs.renameSync(src, dst);
         console.log(
-          `[rename] ${path.basename(src)} -> ${norm.name}${norm.changed ? " (normalized)" : ""}`,
+          `[rename] ${reqFolder ? reqFolder + "/" : ""}${path.basename(src)} -> ${norm.name}${norm.changed ? " (normalized)" : ""}`,
         );
         sendJson(res, 200, {
           ok: true,
           name: norm.name,
+          folder: reqFolder,
           changed: norm.changed,
           requested: to,
         });
@@ -709,8 +792,21 @@ async function main() {
 
       if (req.method === "POST" && url.pathname === "/api/save-edit") {
         const body = await readBody(req);
-        const { name, dataUrl } = JSON.parse(body.toString("utf-8"));
-        const src = resolveSafe(articleDir, name);
+        const {
+          name,
+          dataUrl,
+          folder: reqFolder = "",
+        } = JSON.parse(body.toString("utf-8"));
+        const workDir = reqFolder
+          ? FOLDER_RE.test(reqFolder)
+            ? path.join(articleDir, reqFolder)
+            : null
+          : articleDir;
+        if (!workDir) {
+          sendJson(res, 400, { error: "不正なフォルダ名です" });
+          return;
+        }
+        const src = resolveSafe(workDir, name);
         if (!src) {
           sendJson(res, 400, { error: "不正なファイル名です" });
           return;
@@ -721,25 +817,35 @@ async function main() {
         }
         const { buffer } = dataUrlToBuffer(dataUrl);
         const png = await sharp(buffer)
-          .png({ compressionLevel: 9 })
+          .png({ compressionLevel: 9, adaptiveFiltering: true })
           .toBuffer();
-        // 編集結果は常に PNG。元拡張子が .png 以外なら .png にリネーム。
         const base = path.basename(src, path.extname(src));
-        const outPath = path.join(articleDir, `${base}.png`);
+        const outPath = path.join(workDir, `${base}.png`);
         fs.writeFileSync(outPath, png);
         if (outPath !== src) fs.unlinkSync(src);
         const outName = path.basename(outPath);
         console.log(
-          `[edit-save] ${path.basename(src)} -> ${outName} (${png.length} bytes)`,
+          `[edit-save] ${reqFolder ? reqFolder + "/" : ""}${path.basename(src)} -> ${outName} (${png.length} bytes)`,
         );
-        sendJson(res, 200, { ok: true, name: outName });
+        sendJson(res, 200, { ok: true, name: outName, folder: reqFolder });
         return;
       }
 
       if (req.method === "POST" && url.pathname === "/api/delete") {
         const body = await readBody(req);
-        const { name } = JSON.parse(body.toString("utf-8"));
-        const full = resolveSafe(articleDir, name);
+        const { name, folder: reqFolder = "" } = JSON.parse(
+          body.toString("utf-8"),
+        );
+        const workDir = reqFolder
+          ? FOLDER_RE.test(reqFolder)
+            ? path.join(articleDir, reqFolder)
+            : null
+          : articleDir;
+        if (!workDir) {
+          sendJson(res, 400, { error: "不正なフォルダ名です" });
+          return;
+        }
+        const full = resolveSafe(workDir, name);
         if (!full) {
           sendJson(res, 400, { error: "不正なファイル名です" });
           return;
@@ -749,14 +855,88 @@ async function main() {
           return;
         }
         fs.unlinkSync(full);
-        console.log(`[delete] ${path.basename(full)}`);
+        console.log(
+          `[delete] ${reqFolder ? reqFolder + "/" : ""}${path.basename(full)}`,
+        );
         sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      if (req.method === "POST" && url.pathname === "/api/mkdir") {
+        const body = await readBody(req);
+        const { name } = JSON.parse(body.toString("utf-8"));
+        if (!FOLDER_RE.test(name)) {
+          sendJson(res, 400, {
+            error:
+              "フォルダ名は半角英小文字・数字・ハイフン・アンダースコア (最大32文字) のみ使用できます",
+          });
+          return;
+        }
+        const newDir = path.join(articleDir, name);
+        if (fs.existsSync(newDir)) {
+          sendJson(res, 409, { error: `'${name}' は既に存在します` });
+          return;
+        }
+        fs.mkdirSync(newDir);
+        console.log(`[mkdir] ${name}`);
+        sendJson(res, 200, { ok: true, name });
+        return;
+      }
+
+      if (req.method === "POST" && url.pathname === "/api/move") {
+        const body = await readBody(req);
+        const {
+          name,
+          folder: srcFolder = "",
+          targetFolder = "",
+        } = JSON.parse(body.toString("utf-8"));
+        if (srcFolder && !FOLDER_RE.test(srcFolder)) {
+          sendJson(res, 400, { error: "不正な移動元フォルダ名です" });
+          return;
+        }
+        if (targetFolder && !FOLDER_RE.test(targetFolder)) {
+          sendJson(res, 400, { error: "不正な移動先フォルダ名です" });
+          return;
+        }
+        const srcDir = srcFolder
+          ? path.join(articleDir, srcFolder)
+          : articleDir;
+        const dstDir = targetFolder
+          ? path.join(articleDir, targetFolder)
+          : articleDir;
+        const srcFull = resolveSafe(srcDir, name);
+        if (!srcFull || !fs.existsSync(srcFull)) {
+          sendJson(res, 404, { error: "移動元ファイルが見つかりません" });
+          return;
+        }
+        if (targetFolder && !fs.existsSync(dstDir)) {
+          sendJson(res, 404, {
+            error: `移動先フォルダ '${targetFolder}' が見つかりません`,
+          });
+          return;
+        }
+        const fname = path.basename(srcFull);
+        const dstFull = path.join(dstDir, fname);
+        if (fs.existsSync(dstFull)) {
+          sendJson(res, 409, {
+            error: `移動先に同名ファイル '${fname}' が既に存在します`,
+          });
+          return;
+        }
+        fs.renameSync(srcFull, dstFull);
+        console.log(
+          `[move] ${srcFolder ? srcFolder + "/" : ""}${fname} -> ${targetFolder ? targetFolder + "/" : ""}${fname}`,
+        );
+        sendJson(res, 200, { ok: true, name: fname, folder: targetFolder });
         return;
       }
 
       if (req.method === "GET" && url.pathname === "/api/events") {
         sseClients++;
-        if (shutdownTimer) { clearTimeout(shutdownTimer); shutdownTimer = null; }
+        if (shutdownTimer) {
+          clearTimeout(shutdownTimer);
+          shutdownTimer = null;
+        }
         res.writeHead(200, {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
@@ -768,7 +948,9 @@ async function main() {
           if (sseClients === 0) {
             shutdownTimer = setTimeout(() => {
               if (sseClients === 0) {
-                console.log("\nタブが閉じられました。ファイル管理画面を終了します。");
+                console.log(
+                  "\nタブが閉じられました。ファイル管理画面を終了します。",
+                );
                 server.close(() => process.exit(0));
                 setTimeout(() => process.exit(0), 500).unref();
               }

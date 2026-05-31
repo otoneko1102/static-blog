@@ -139,9 +139,16 @@ function isHeic(buffer) {
   if (buffer.length < 12) return false;
   if (buffer.subarray(4, 8).toString("ascii") !== "ftyp") return false;
   const brand = buffer.subarray(8, 12).toString("ascii");
-  return ["heic", "heix", "hevc", "hevx", "mif1", "msf1", "heim", "heis"].includes(
-    brand,
-  );
+  return [
+    "heic",
+    "heix",
+    "hevc",
+    "hevx",
+    "mif1",
+    "msf1",
+    "heim",
+    "heis",
+  ].includes(brand);
 }
 
 function openBrowser(url) {
@@ -331,7 +338,10 @@ async function main() {
 
       if (req.method === "GET" && url.pathname === "/api/events") {
         sseClients++;
-        if (shutdownTimer) { clearTimeout(shutdownTimer); shutdownTimer = null; }
+        if (shutdownTimer) {
+          clearTimeout(shutdownTimer);
+          shutdownTimer = null;
+        }
         res.writeHead(200, {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
