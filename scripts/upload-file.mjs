@@ -9,6 +9,7 @@ import sharp from "sharp";
 import pug from "pug";
 import kuromoji from "kuromoji";
 import { toRomaji } from "wanakana";
+import { compressUpload, recompress } from "./lib/compress-image.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -368,41 +369,30 @@ function resolveInFolder(baseDir, folder, name) {
   return resolveSafe(path.join(baseDir, folder), name);
 }
 
-const SHARP_FORMAT_TO_EXT = {
-  png: ".png",
-  jpeg: ".jpg",
-  webp: ".webp",
-  gif: ".gif",
-  avif: ".avif",
-  tiff: ".tif",
-  svg: ".svg",
-  heif: ".heic",
-};
-
 /**
- * 画像の前処理:
- *  - HEIC/HEIF → heic-convert で PNG
- *  - その他: sharp で形式判定
- *    - 静止画 → PNG (ロスレス、サイズ保持)
- *    - アニメ (pages > 1) → 元バイト・元拡張子のまま (アニメを破壊しない)
+ * 画像の前処理 (画質をあまり落とさず圧縮し、形式は基本そのまま保つ):
+ *  - HEIC/HEIF → heic-convert で JPEG (写真主体なので JPEG が最適) にして再圧縮
+ *  - SVG       → ベクタなのでそのまま (ラスタ化しない)
+ *  - その他    → scripts/lib/compress-image.mjs の compressUpload に委譲
+ *      - JPEG/PNG/WebP は形式保持で準ロスレス圧縮
+ *      - アニメ (GIF/APNG/animated WebP) は元バイト保持
+ *      - BMP/TIFF/静止 GIF は PNG に変換 (新規ファイルなので参照に影響なし)
  */
 async function processImage(buffer, originalExt) {
   const lowerExt = originalExt.toLowerCase();
   if (HEIC_EXTS.includes(lowerExt) || isHeic(buffer)) {
     const heicConvert = (await import("heic-convert")).default;
-    const png = await heicConvert({ buffer, format: "PNG" });
-    return { buffer: Buffer.from(png), ext: ".png" };
+    const jpg = Buffer.from(
+      await heicConvert({ buffer, format: "JPEG", quality: 0.9 }),
+    );
+    const compressed = await recompress(jpg, ".jpg");
+    return { buffer: compressed ?? jpg, ext: ".jpg" };
+  }
+  if (lowerExt === ".svg") {
+    return { buffer, ext: ".svg" };
   }
   try {
-    const meta = await sharp(buffer, { animated: true }).metadata();
-    const isAnimated = (meta.pages ?? 1) > 1;
-    if (isAnimated) {
-      // 元形式を保存 (sharp 経由で PNG にするとアニメが落ちる)
-      const ext = SHARP_FORMAT_TO_EXT[meta.format] || lowerExt || ".gif";
-      return { buffer, ext };
-    }
-    const png = await sharp(buffer).png({ compressionLevel: 9 }).toBuffer();
-    return { buffer: png, ext: ".png" };
+    return await compressUpload(buffer, lowerExt);
   } catch (err) {
     throw new Error(`画像として処理できません: ${err.message}`);
   }

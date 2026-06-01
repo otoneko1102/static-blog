@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import sharp from "sharp";
+import { recompress } from "./lib/compress-image.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,14 +25,15 @@ function getCurrentBranchArticleId() {
   }
 }
 
-function resolveArticleId(argv) {
-  const explicit = argv[2];
+function resolveArticleId(args) {
+  const explicit = args.find((a) => !a.startsWith("-"));
   if (explicit) return explicit;
   const branchId = getCurrentBranchArticleId();
   if (!branchId) {
     throw new Error(
       "記事IDが指定されておらず、現在のブランチも 'article/<id>' 形式ではありません。\n" +
-        "  使い方: pnpm comp <id>  または  article/<id> ブランチに切り替えてください。",
+        "  使い方: pnpm comp <id>  または  article/<id> ブランチに切り替えてください。\n" +
+        "          すべての記事を一括圧縮するには pnpm comp:all を実行してください。",
     );
   }
   return branchId;
@@ -59,26 +60,11 @@ async function compressFile(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   const buf = fs.readFileSync(filePath);
   const originalSize = buf.length;
-  let outBuf = null;
 
-  try {
-    if (ext === ".png") {
-      // ロスレス：アダプティブフィルタ＋最大圧縮
-      outBuf = await sharp(buf, { animated: true })
-        .png({ compressionLevel: 9, adaptiveFiltering: true })
-        .toBuffer();
-    } else if ([".jpg", ".jpeg", ".jpe", ".jfif"].includes(ext)) {
-      // JPEG: mozjpeg エンコーダで品質88 (元が低品質なら再エンコで大きくなる可能性があるためサイズチェック)
-      outBuf = await sharp(buf).jpeg({ quality: 88, mozjpeg: true }).toBuffer();
-    } else {
-      // WebP / AVIF / GIF / APNG / 動画 / 音声 / PDF → スキップ
-      return null;
-    }
-  } catch {
-    return null;
-  }
-
-  if (!outBuf || outBuf.length >= originalSize) return null;
+  // 拡張子を保持したまま準ロスレス再圧縮 (PNG / JPEG のみ)。
+  // WebP / AVIF / GIF / APNG / 動画 / 音声 / PDF → null (スキップ)。
+  const outBuf = await recompress(buf, ext);
+  if (!outBuf) return null;
 
   fs.writeFileSync(filePath, outBuf);
   return {
@@ -88,29 +74,15 @@ async function compressFile(filePath) {
   };
 }
 
-async function main() {
-  const id = resolveArticleId(process.argv);
-
-  const articleDir = path.join(publicFilesDir, id);
-  if (!fs.existsSync(articleDir)) {
-    console.error(`エラー: ディレクトリが見つかりません: ${articleDir}`);
-    process.exit(1);
-  }
-
-  console.log(`[記事ID] ${id}`);
-  console.log(
-    `[対象]   ${path.relative(rootDir, articleDir).replace(/\\/g, "/")}/`,
-  );
-  console.log("");
-
-  const allFiles = walkFiles(articleDir);
+async function compressDir(targetDir, baseDir) {
+  const allFiles = walkFiles(targetDir);
   let totalOriginal = 0;
   let totalNew = 0;
   let compressedCount = 0;
   let skippedCount = 0;
 
   for (const filePath of allFiles) {
-    const relPath = path.relative(articleDir, filePath).replace(/\\/g, "/");
+    const relPath = path.relative(baseDir, filePath).replace(/\\/g, "/");
     const result = await compressFile(filePath);
     if (result) {
       const pct = ((result.saved / result.originalSize) * 100).toFixed(1);
@@ -127,6 +99,35 @@ async function main() {
       skippedCount++;
     }
   }
+
+  return { totalOriginal, totalNew, compressedCount, skippedCount };
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const all = args.includes("--all") || args.includes("-a");
+
+  let targetDir;
+  if (all) {
+    targetDir = publicFilesDir;
+    console.log(`[対象]   すべての記事 (public/files/)`);
+  } else {
+    const id = resolveArticleId(args);
+    targetDir = path.join(publicFilesDir, id);
+    console.log(`[記事ID] ${id}`);
+    console.log(
+      `[対象]   ${path.relative(rootDir, targetDir).replace(/\\/g, "/")}/`,
+    );
+  }
+
+  if (!fs.existsSync(targetDir)) {
+    console.error(`エラー: ディレクトリが見つかりません: ${targetDir}`);
+    process.exit(1);
+  }
+  console.log("");
+
+  const { totalOriginal, totalNew, compressedCount, skippedCount } =
+    await compressDir(targetDir, all ? publicFilesDir : targetDir);
 
   console.log("");
   console.log(`完了: ${compressedCount} 件圧縮, ${skippedCount} 件スキップ`);
