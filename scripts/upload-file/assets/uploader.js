@@ -11,6 +11,7 @@
   const previewModeEl = $("previewMode");
   const editModeEl = $("editMode");
   const editBtnEl = $("editBtn");
+  const toPngBtnEl = $("toPngBtn");
   const renameBtnEl = $("renameBtn");
   const deleteBtnEl = $("deleteBtn");
   const otherArticlesToggleEl = $("otherArticlesToggle");
@@ -293,6 +294,10 @@
     fileTypeIconEl.textContent = iconForKind(selected.kind, selected.mime);
     fileMetaEl.textContent = `${isMine ? "" : `[${articleId}] · `}${folder ? folder + "/" : ""}${formatSize(selected.size)} / ${formatDate(selected.mtime)}`;
     editBtnEl.hidden = selected.kind !== "image" || !isMine;
+    toPngBtnEl.hidden =
+      selected.kind !== "image" ||
+      !isMine ||
+      selected.name.toLowerCase().endsWith(".png");
     renameBtnEl.hidden = !isMine;
     deleteBtnEl.hidden = !isMine;
     moveBtnEl.hidden = !isMine || (folders.length === 0 && !folder);
@@ -674,6 +679,30 @@
   }
 
   editBtnEl.addEventListener("click", enterEditMode);
+
+  // ---------- PNG 変換 ----------
+  async function convertToPng() {
+    if (!selected || selected.kind !== "image") return;
+    if (selected.articleId && selected.articleId !== CONFIG.articleId) return;
+    if (selected.name.toLowerCase().endsWith(".png")) return;
+    const folder = selected.folder || "";
+    toPngBtnEl.disabled = true;
+    try {
+      const data = await api("/api/to-png", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: selected.name, folder }),
+      });
+      toast(`PNG に変換: ${selected.name} → ${data.name}`, "success");
+      await loadFiles(data.name, data.folder ?? folder);
+    } catch (err) {
+      toast("PNG 変換失敗: " + err.message, "error");
+    } finally {
+      toPngBtnEl.disabled = false;
+    }
+  }
+  toPngBtnEl.addEventListener("click", convertToPng);
+
   $("editCancelBtn").addEventListener("click", () => exitEditMode());
   $("editSaveBtn").addEventListener("click", saveEdit);
   function rotateCropper(deg) {
