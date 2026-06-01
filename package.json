@@ -16,6 +16,7 @@
     "thumbnail": "node scripts/edit-thumbnail.mjs",
     "file": "node scripts/upload-file.mjs",
     "comp": "node scripts/compress-files.mjs",
+    "comp:all": "node scripts/compress-files.mjs --all",
     "date:pub": "node scripts/update-date.mjs pubDate",
     "date:publish": "node scripts/update-date.mjs pubDate",
     "date:updated": "node scripts/update-date.mjs updatedDate",
