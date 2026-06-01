@@ -4,12 +4,16 @@ import sharp from "sharp";
 // `pnpm file` のアップロード (compress-image → compressUpload) と
 // `pnpm comp` / `pnpm comp:all` (recompress) で共有する。
 //
-// 方針: 画質をあまり落とさず (準ロスレス) にサイズを削減し、拡張子は保持する。
+// 方針: 画質をあまり落とさず (準ロスレス) にサイズを削減する。
+//  - アップロード (compressUpload): 静止画はすべて PNG に変換する。新規
+//    ファイルなので拡張子が変わっても記事参照に影響しない。アニメ
+//    (GIF / APNG / animated WebP) だけは再エンコードせず元形式を保持する。
+//  - 再圧縮 (recompress): 拡張子を変えると記事内の ![](...) 参照が壊れるため、
+//    PNG / JPEG のみを対象に同じ拡張子で書き戻す。
+//
+// 形式別エンコーダ:
 //  - PNG  : パレット量子化 (高品質) + 最大圧縮。アニメ PNG はロスレス。
-//  - JPEG : mozjpeg エンコーダで品質 88 に再エンコード。
-//  - WebP : 品質 90 で再エンコード (アップロード時のみ)。
-// 拡張子を変えると記事内の ![](...) 参照が壊れるため、既存ファイルの
-// 再圧縮 (recompress) では PNG / JPEG のみを対象に同じ拡張子で書き戻す。
+//  - JPEG : mozjpeg エンコーダで品質 88 に再エンコード (recompress のみ)。
 
 export const JPEG_EXTS = [".jpg", ".jpeg", ".jpe", ".jfif"];
 
@@ -59,10 +63,6 @@ function encodeJpeg(buffer) {
   return sharp(buffer).jpeg({ quality: 88, mozjpeg: true }).toBuffer();
 }
 
-function encodeWebp(buffer) {
-  return sharp(buffer).webp({ quality: 90, effort: 6 }).toBuffer();
-}
-
 /**
  * 既存ファイルの再圧縮 (拡張子は保持)。
  * PNG / JPEG のみ対象。圧縮できない / サイズが縮まない場合は null。
@@ -90,17 +90,11 @@ export async function recompress(buffer, ext) {
   return out;
 }
 
-function pickSmaller(candidate, candidateExt, original, originalExt) {
-  if (candidate && candidate.length < original.length) {
-    return { buffer: candidate, ext: candidateExt };
-  }
-  return { buffer: original, ext: originalExt };
-}
-
 /**
- * アップロード時の圧縮。形式を保持しつつ準ロスレス圧縮する。
- * 非 Web 形式 (BMP/TIFF) や静止 GIF は PNG に変換する (新規ファイルなので
- * 拡張子が変わっても記事参照に影響しない)。SVG / HEIC は呼び出し側で処理。
+ * アップロード時の圧縮。静止画はすべて PNG (パレット量子化) に変換する。
+ * 新規ファイルなので拡張子が変わっても記事参照に影響しない。
+ * アニメ (GIF / APNG / animated WebP) だけは再エンコードせず元形式を保持する。
+ * SVG / HEIC は呼び出し側で処理。
  * @returns {Promise<{buffer: Buffer, ext: string}>}
  */
 export async function compressUpload(buffer, ext) {
@@ -108,31 +102,17 @@ export async function compressUpload(buffer, ext) {
   const meta = await readMeta(buffer);
   const animated = meta ? (meta.pages ?? 1) > 1 : false;
 
-  // アニメ (GIF / APNG / animated WebP) は再エンコードせず元バイトを保持
+  // アニメ (GIF / APNG / animated WebP) は再エンコードせず元バイト・形式を保持
   if (animated) {
     const outExt = SHARP_FORMAT_TO_EXT[meta.format] || e || ".gif";
     return { buffer, ext: outExt };
   }
 
+  // 静止画はすべて PNG 量子化に変換する
   try {
-    if (JPEG_EXTS.includes(e)) {
-      // .jpeg / .jpe / .jfif も元の拡張子のまま保持する
-      return pickSmaller(await encodeJpeg(buffer), e, buffer, e);
-    }
-    if (e === ".png") {
-      return pickSmaller(await encodePngQuantized(buffer), ".png", buffer, e);
-    }
-    if (e === ".webp") {
-      return pickSmaller(await encodeWebp(buffer), ".webp", buffer, e);
-    }
-    if (e === ".avif") {
-      // すでに高効率なのでそのまま
-      return { buffer, ext: e };
-    }
-    // BMP / TIFF / 静止 GIF / その他 sharp が読める形式 → PNG 量子化
     return { buffer: await encodePngQuantized(buffer), ext: ".png" };
   } catch {
-    // 圧縮に失敗した場合は元のまま保存
+    // 変換に失敗した場合は元のまま保存
     return { buffer, ext: e };
   }
 }

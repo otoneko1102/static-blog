@@ -149,13 +149,13 @@
       const j = await res.json();
       if (!res.ok || j.error) throw new Error(j.error || res.statusText);
       showStatus(
-        j.dataUrl
-          ? `HEIC を PNG に変換してアップロード: _thumbnail${j.ext}`
+        j.converted
+          ? `PNG に変換してアップロード: _thumbnail${j.ext}`
           : `画像をアップロード: _thumbnail${j.ext}`,
         "success",
       );
-      // HEIC など、サーバ側で PNG 変換した場合は変換後の dataUrl を使う
-      // (ブラウザは HEIC を <img> でレンダリングできないため)
+      // サーバ側で PNG 変換した場合 (HEIC / 非 PNG 静止画) は変換後の dataUrl を使う
+      // (ブラウザが元形式を <img> でレンダリングできない場合があるため)
       initCropper(j.dataUrl || dataUrl);
     } catch (err) {
       showStatus("アップロード失敗: " + err.message, "error");

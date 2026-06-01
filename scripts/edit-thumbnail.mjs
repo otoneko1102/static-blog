@@ -297,6 +297,26 @@ async function main() {
           outBuffer = Buffer.from(png);
           outExt = ".png";
           convertedDataUrl = `data:image/png;base64,${outBuffer.toString("base64")}`;
+        } else {
+          // 静止画はすべて PNG に変換する。アニメ (GIF/APNG/animated WebP)
+          // だけは元形式を保持する。クライアントの拡張子ヒントは信頼せず、
+          // 実際のバイト列から形式・アニメ有無を判定する。
+          const meta = await sharp(buffer, { animated: true })
+            .metadata()
+            .catch(() => null);
+          const animated = meta ? (meta.pages ?? 1) > 1 : false;
+          if (animated) {
+            // sharp の format 名 → 拡張子 (APNG は format=png として報告される)
+            outExt =
+              { gif: ".gif", webp: ".webp", png: ".apng" }[meta.format] ||
+              (VALID_EXTS.includes(requested) ? requested : ".gif");
+          } else {
+            outBuffer = await sharp(buffer)
+              .png({ compressionLevel: 9, adaptiveFiltering: true })
+              .toBuffer();
+            outExt = ".png";
+            convertedDataUrl = `data:image/png;base64,${outBuffer.toString("base64")}`;
+          }
         }
 
         removeOtherThumbnails(articleDir, outExt);
@@ -305,12 +325,13 @@ async function main() {
           outBuffer,
         );
         console.log(
-          `[upload] _thumbnail${outExt} (${outBuffer.length} bytes${isHeicInput ? ", from HEIC" : ""})`,
+          `[upload] _thumbnail${outExt} (${outBuffer.length} bytes${convertedDataUrl ? ", PNG に変換" : ""})`,
         );
         sendJson(res, 200, {
           ok: true,
           ext: outExt,
           dataUrl: convertedDataUrl,
+          converted: convertedDataUrl !== null,
         });
         return;
       }
