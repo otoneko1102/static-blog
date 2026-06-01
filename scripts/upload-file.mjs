@@ -370,23 +370,21 @@ function resolveInFolder(baseDir, folder, name) {
 }
 
 /**
- * 画像の前処理 (画質をあまり落とさず圧縮し、形式は基本そのまま保つ):
- *  - HEIC/HEIF → heic-convert で JPEG (写真主体なので JPEG が最適) にして再圧縮
+ * 画像の前処理。アップロード時は静止画をすべて PNG に変換する
+ * (新規ファイルなので拡張子が変わっても記事参照に影響しない):
+ *  - HEIC/HEIF → heic-convert で PNG にして再圧縮
  *  - SVG       → ベクタなのでそのまま (ラスタ化しない)
  *  - その他    → scripts/lib/compress-image.mjs の compressUpload に委譲
- *      - JPEG/PNG/WebP は形式保持で準ロスレス圧縮
- *      - アニメ (GIF/APNG/animated WebP) は元バイト保持
- *      - BMP/TIFF/静止 GIF は PNG に変換 (新規ファイルなので参照に影響なし)
+ *      - 静止画 (JPEG/PNG/WebP/AVIF/BMP/TIFF/静止 GIF) は PNG に変換
+ *      - アニメ (GIF/APNG/animated WebP) だけは元形式を保持
  */
 async function processImage(buffer, originalExt) {
   const lowerExt = originalExt.toLowerCase();
   if (HEIC_EXTS.includes(lowerExt) || isHeic(buffer)) {
     const heicConvert = (await import("heic-convert")).default;
-    const jpg = Buffer.from(
-      await heicConvert({ buffer, format: "JPEG", quality: 0.9 }),
-    );
-    const compressed = await recompress(jpg, ".jpg");
-    return { buffer: compressed ?? jpg, ext: ".jpg" };
+    const png = Buffer.from(await heicConvert({ buffer, format: "PNG" }));
+    const compressed = await recompress(png, ".png");
+    return { buffer: compressed ?? png, ext: ".png" };
   }
   if (lowerExt === ".svg") {
     return { buffer, ext: ".svg" };
@@ -816,6 +814,76 @@ async function main() {
         const outName = path.basename(outPath);
         console.log(
           `[edit-save] ${reqFolder ? reqFolder + "/" : ""}${path.basename(src)} -> ${outName} (${png.length} bytes)`,
+        );
+        sendJson(res, 200, { ok: true, name: outName, folder: reqFolder });
+        return;
+      }
+
+      if (req.method === "POST" && url.pathname === "/api/to-png") {
+        const body = await readBody(req);
+        const { name, folder: reqFolder = "" } = JSON.parse(
+          body.toString("utf-8"),
+        );
+        const workDir = reqFolder
+          ? FOLDER_RE.test(reqFolder)
+            ? path.join(articleDir, reqFolder)
+            : null
+          : articleDir;
+        if (!workDir) {
+          sendJson(res, 400, { error: "不正なフォルダ名です" });
+          return;
+        }
+        const src = resolveSafe(workDir, name);
+        if (!src) {
+          sendJson(res, 400, { error: "不正なファイル名です" });
+          return;
+        }
+        if (!fs.existsSync(src)) {
+          sendJson(res, 404, { error: "ファイルが見つかりません" });
+          return;
+        }
+        const srcExt = path.extname(src).toLowerCase();
+        if (srcExt === ".png") {
+          sendJson(res, 400, { error: "すでに PNG です" });
+          return;
+        }
+        if (!IMAGE_EXTS.includes(srcExt)) {
+          sendJson(res, 400, { error: "画像ファイルではありません" });
+          return;
+        }
+        const srcBuffer = fs.readFileSync(src);
+        let png;
+        try {
+          if (HEIC_EXTS.includes(srcExt) || isHeic(srcBuffer)) {
+            const heicConvert = (await import("heic-convert")).default;
+            png = Buffer.from(await heicConvert({ buffer: srcBuffer, format: "PNG" }));
+          } else {
+            const meta = await sharp(srcBuffer, { animated: true })
+              .metadata()
+              .catch(() => null);
+            const animated = meta ? (meta.pages ?? 1) > 1 : false;
+            // アニメは APNG として変換し、アニメーションを保持する
+            png = animated
+              ? await sharp(srcBuffer, { animated: true })
+                  .png({ compressionLevel: 9, adaptiveFiltering: true })
+                  .toBuffer()
+              : await sharp(srcBuffer)
+                  .png({ compressionLevel: 9, adaptiveFiltering: true })
+                  .toBuffer();
+          }
+        } catch (err) {
+          sendJson(res, 500, {
+            error: "PNG 変換に失敗しました: " + String(err?.message ?? err),
+          });
+          return;
+        }
+        const base = path.basename(src, path.extname(src));
+        const outName = uniqueName(workDir, `${base}.png`);
+        const outPath = path.join(workDir, outName);
+        fs.writeFileSync(outPath, png);
+        if (outPath !== src) fs.unlinkSync(src);
+        console.log(
+          `[to-png] ${reqFolder ? reqFolder + "/" : ""}${path.basename(src)} -> ${outName} (${png.length} bytes)`,
         );
         sendJson(res, 200, { ok: true, name: outName, folder: reqFolder });
         return;
